@@ -130,6 +130,34 @@ For these cases, explain what needs fixing and route to the appropriate remediat
 | Network / connectivity (possibly transient) | `GLOBAL_ERROR` contains "connection refused", "DNS", "SSL", "certificate" — worth one retry before escalating |
 | Stale failure | `LATEST_RUN_START` is more than 24 hours ago — the underlying issue may have been resolved externally |
 
+**Before offering a re-run for transient or network errors: check the consecutive failure depth.**
+
+If any sync matched the "Transient / server errors", "Vague `GLOBAL_ERROR`", or "Network / connectivity" rows above, run the following to determine whether the error is genuinely one-off or has persisted across multiple runs. This applies equally to inbound and outbound syncs — `GLOBAL_ERROR` is set at the run level, indicating the sync could not start or complete, not a record-level failure.
+
+```sql
+SELECT
+    R.SYNC_RUN_ID,
+    R.RUN_START_DATETIME,
+    R.HEALTH_STATE                              AS RUN_HEALTH,
+    R.CANCELLED_DATETIME IS NOT NULL            AS WAS_CANCELLED,
+    CASE WHEN R.GLOBAL_ERROR IS NOT NULL
+         THEN LEFT(R.GLOBAL_ERROR, 150)
+    END                                         AS GLOBAL_ERROR_EXCERPT
+FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC_RUN R
+WHERE R.SYNC_ID = <sync_id>
+ORDER BY R.RUN_START_DATETIME DESC
+LIMIT 15
+```
+
+Working from the most recent run backward, count how many consecutive runs have a non-null `GLOBAL_ERROR` before reaching the first `HEALTHY` run — this is the **consecutive failure streak**.
+
+| Streak result | Action |
+|---|---|
+| Streak = 1 or 2 runs | Likely genuinely transient — proceed to the re-run offer below |
+| Streak ≥ 3 runs, errors consistent (same or similar text) | Not genuinely transient — investigate before re-running. Three paths to check in parallel: (1) **Status pages** — check `https://status.snowflake.com` and `https://status.omnata.com` for active incidents that explain the sustained failure (see `references/support-handoff.md` Step 1); (2) **Error origin** — read `references/error-knowledge-base.md` to classify whether this is endpoint-side (sustained outage or auth issue), platform-level (networking, EAI), or Snowflake-side; (3) **Connection history** — check `references/monitoring-connections.md` Step 4 for credential changes that coincide with the failure window. Only offer a re-run once one of these paths has identified and resolved the root cause. |
+| Streak ≥ 3 runs, errors varied (different text across runs) | Mixed failure pattern — proceed to re-run but flag to the user that the sync has been failing repeatedly and they should monitor the result closely |
+| All recent runs are `INCOMPLETE` with no `GLOBAL_ERROR` | Run was interrupted before completing, not erroring at the platform level — proceed to re-run offer |
+
 **Ask the user before triggering.** Present the re-runnable syncs and ask which (if any) they'd like to trigger. Do not trigger automatically.
 
 **Execute the re-run:**

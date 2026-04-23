@@ -135,9 +135,98 @@ ORDER BY FAILED_RUNS DESC, C.IS_PRODUCTION_ENVIRONMENT DESC, C.CONNECTION_NAME
 | `RECENT_RUNS = 0` and `TOTAL_SYNCS = 0` | Orphaned connection — no syncs use it | Flag as potentially stale; suggest cleanup via Step 5 (`DELETE_CONNECTION`) if appropriate |
 | `LAST_FAILURE > LAST_SUCCESS` | Most recent activity was a failure | Check `RECENT_ERROR_SAMPLES` for auth/connectivity patterns |
 | `RECENT_ERROR_SAMPLES` contains `401`, `403`, `authentication`, `token`, `unauthorized`, `expired` | Authentication/authorization failure — OAuth token or API key has expired or been revoked | Credentials must be refreshed in the **Omnata UI** connection wizard (Account Admin required for the underlying Security Integration and Secrets). Cannot be fixed from SQL. |
-| `RECENT_ERROR_SAMPLES` contains `timeout`, `connection refused`, `network`, `DNS` | Network/connectivity issue | Check Snowflake network rules and External Access Integration via Step 4 (`NETWORK_RULE_NAME`, `EXTERNAL_ACCESS_INTEGRATION_NAME`). If the EAI or Network Rule needs updating, this must be done through the **Omnata UI** or by an Account Admin — the Omnata wizard manages these objects. |
+| `RECENT_ERROR_SAMPLES` contains `timeout`, `connection refused`, `network`, `DNS` | Network/connectivity issue | Check Snowflake network rules and External Access Integration via Step 5 (`NETWORK_RULE_NAME`, `EXTERNAL_ACCESS_INTEGRATION_NAME`). If the EAI or Network Rule needs updating, this must be done through the **Omnata UI** or by an Account Admin — the Omnata wizard manages these objects. |
 
-### Step 4: Connection Lookup (optional)
+### Step 4: Connection History (optional)
+
+**Goal:** Show the full lifecycle of a connection — when it was created, when credentials were changed, and when it was tested — from the Snowflake event table. Use this when investigating consecutive sync failures with ambiguous errors to determine whether a credential change coincides with the failure window.
+
+**When to use:**
+- User asks when a connection was created or when credentials last changed
+- A sync was failing with vague errors (HTTP 500, connection refused, retry exhaustion) but is now healthy and the cause is unclear — a credential rotation may explain it
+- You want to confirm that a connection edit followed by sync recovery means the edit fixed the issue
+
+**Prerequisites:** Requires access to the account event table. First discover the event table location by running `SHOW PARAMETERS LIKE 'EVENT_TABLE' IN ACCOUNT` — see Step 0 of `references/event-table-diagnostics.md` for full guidance including role requirements (`EVENTS_VIEWER` or `EVENTS_ADMIN`).
+
+#### Step 4a: Connection lifecycle events
+
+Connection creation, editing, and deletion all execute through `OMNATA_SYNC_ENGINE` API procedures. Query the event table using the app name discovered in `event-table-diagnostics.md` Step 1:
+
+```sql
+SELECT
+    TIMESTAMP,
+    RESOURCE_ATTRIBUTES:"snow.executable.name"::VARCHAR     AS EXECUTABLE,
+    RECORD:name::VARCHAR                                    AS SPAN_NAME,
+    RECORD_TYPE
+FROM <event_table>
+WHERE RESOURCE_ATTRIBUTES:"snow.application.name"::VARCHAR = '<omnata_app_name>'
+  AND RESOURCE_ATTRIBUTES:"snow.executable.name"::VARCHAR ILIKE ANY (
+      '%BEGIN_CONNECTION_CREATION%',
+      '%COMPLETE_CONNECTION_CREATION%',
+      '%BEGIN_CONNECTION_EDIT%',
+      '%CANCEL_CONNECTION_CREATION%',
+      '%DELETE_CONNECTION%',
+      '%SET_CONNECTION_ENVIRONMENT%'
+  )
+ORDER BY TIMESTAMP
+```
+
+> **Note:** Connection lifecycle events do not include the connection slug or ID in their attributes. To associate events with a specific connection, correlate by timestamp proximity to known sync activity for that connection (from `SYNC_RUN.RUN_START_DATETIME`).
+
+#### Step 4b: Secret and credential update events
+
+OAuth tokens and API keys are written to Snowflake Secrets by the connector plugin app, not by `OMNATA_SYNC_ENGINE`. Plugin apps always contain `PLUGIN` in their name (e.g. `OMNATA_SALESFORCE_PLUGIN`, `OMNATA_HUBSPOT_PLUGIN`):
+
+```sql
+SELECT
+    TIMESTAMP,
+    RESOURCE_ATTRIBUTES:"snow.application.name"::VARCHAR    AS APP_NAME,
+    RESOURCE_ATTRIBUTES:"snow.executable.name"::VARCHAR     AS EXECUTABLE,
+    RECORD:name::VARCHAR                                    AS SPAN_NAME,
+    RECORD_TYPE
+FROM <event_table>
+WHERE RESOURCE_ATTRIBUTES:"snow.application.name"::VARCHAR ILIKE '%PLUGIN%'
+  AND RESOURCE_ATTRIBUTES:"snow.executable.name"::VARCHAR ILIKE ANY (
+      '%UPDATE_GENERIC_SECRET%',
+      '%CONFIGURE_APIS%',
+      '%CONNECTION_TEST%',
+      '%NETWORK_ADDRESSES%'
+  )
+  AND TIMESTAMP BETWEEN '<start>' AND '<end>'
+ORDER BY TIMESTAMP
+```
+
+#### Step 4c: Interpreting the timeline
+
+| Event | Meaning |
+|---|---|
+| `BEGIN_CONNECTION_CREATION` | A new connection was started |
+| `COMPLETE_CONNECTION_CREATION` | Connection saved with parameters and secrets |
+| `BEGIN_CONNECTION_EDIT` | An existing connection's credentials were being replaced |
+| `UPDATE_GENERIC_SECRET_OBJECT` | OAuth or other secrets were written or updated |
+| `CONNECTION_TEST` | The connection was tested (usually after creation or edit) |
+| `CONFIGURE_APIS` | The plugin reconfigured its API endpoints for the connection |
+| `CANCEL_CONNECTION_CREATION` | A connection creation was abandoned before completion |
+| `DELETE_CONNECTION` | A connection was removed |
+| `SET_CONNECTION_ENVIRONMENT` | The production/non-production flag was changed |
+
+A typical **connection creation** sequence: `BEGIN_CONNECTION_CREATION` → `CONFIGURE_APIS` → `COMPLETE_CONNECTION_CREATION` → `UPDATE_GENERIC_SECRET_OBJECT` → `CONNECTION_TEST`
+
+A typical **connection edit** sequence: `BEGIN_CONNECTION_EDIT` → `CONFIGURE_APIS` → `COMPLETE_CONNECTION_CREATION` → `UPDATE_GENERIC_SECRET_OBJECT` → `CONNECTION_TEST`
+
+#### Correlating with sync failures
+
+If investigating whether a credential change explains a run of sync failures, compare the connection edit timestamps against the failure window from `SYNC_RUN`. The pattern to look for:
+
+- Consecutive sync failures with the same vague error (HTTP 500, timeout, connection refused)
+- A `BEGIN_CONNECTION_EDIT` + `UPDATE_GENERIC_SECRET_OBJECT` occurring during or shortly after the failure window
+- Syncs succeeding after the edit completes
+
+This pattern indicates the failures were caused by invalid credentials — some platforms return HTTP 500 for expired credentials rather than a clean 401, making the root cause easy to miss without the connection history.
+
+---
+
+### Step 5: Connection Lookup (optional)
 
 If the user asks about a specific app or connection by name:
 
@@ -159,7 +248,7 @@ ORDER BY C.IS_PRODUCTION_ENVIRONMENT DESC, C.CONNECTION_NAME
 
 This surfaces the Snowflake infrastructure object names (`EXTERNAL_ACCESS_INTEGRATION_NAME`, `NETWORK_RULE_NAME`) which are useful when troubleshooting connectivity issues at the Snowflake level.
 
-### Step 5: Advanced Connection Management (use with caution)
+### Step 6: Advanced Connection Management (use with caution)
 
 > **Warning:** The procedures in this step are **undocumented** in the official Omnata gitbook. They exist in the `API` schema and work, but Omnata has not published guidance on them. Only suggest these when the user explicitly needs to perform these operations, and always warn them that these are advanced, undocumented procedures that may change without notice.
 
@@ -171,7 +260,7 @@ Permanently deletes a connection. **This will fail if any syncs still reference 
 
 ```sql
 -- ⚠️ UNDOCUMENTED — Advanced. Irreversible.
--- Arg: CONNECTION_ID (FLOAT) — get from Step 1 or Step 4 results
+-- Arg: CONNECTION_ID (FLOAT) — get from Step 1 or Step 5 results
 CALL OMNATA_SYNC_ENGINE.API.DELETE_CONNECTION(<connection_id>);
 ```
 
@@ -210,5 +299,6 @@ These procedures are not documented but exist in the API schema. Mention them on
 - After Step 1 for a high-level connection health summary
 - After Step 2 when the user wants to see exactly which syncs belong to each connection
 - After Step 3 when the user wants to assess whether a connection's credentials or connectivity are working (inferred from sync run data)
-- After Step 4 when the user is looking for a specific connection or app
-- After Step 5 only when the user explicitly needs to delete, modify, or reconfigure connections via stored procedures
+- After Step 4 when the user is investigating connection history or correlating credential changes with a sync failure window
+- After Step 5 when the user is looking for a specific connection or app
+- After Step 6 only when the user explicitly needs to delete, modify, or reconfigure connections via stored procedures

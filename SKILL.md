@@ -19,6 +19,7 @@ Identify what the user needs and read the appropriate reference file before proc
 | Outbound sync: run history, failed records, stuck records, error details | `references/monitoring-outbound.md` |
 | Inbound sync: data freshness, run history, stream failures, cursor state | `references/monitoring-inbound.md` |
 | What connections exist, which are orphaned or problematic, connection health, test connection, delete connection, advanced connection management | `references/monitoring-connections.md` |
+| Connection history, when was a connection created or edited, credential changes, secret updates | `references/monitoring-connections.md` |
 | Contact Omnata support, raise a ticket, report a bug | `references/support-handoff.md` |
 <!-- end-section-owner: co-work -->
 <!-- section-owner: cortex-code — diagnostic and error classification routes -->
@@ -38,6 +39,12 @@ If the error from `DATA_VIEWS` is insufficient to diagnose the root cause (e.g. 
 `GLOBAL_ERROR`, an unexpected failure pattern, or the user asks "why" beyond what the error
 text explains), escalate to `references/event-table-diagnostics.md` to query the Snowflake
 Event Table for full stack traces and sync run lifecycle detail.
+
+If a previously failing sync has recovered on its own and the cause is unclear, check the
+connection's history for credential changes that coincide with the failure window —
+see "Step 4: Connection History" in `references/monitoring-connections.md`. Consecutive
+identical errors followed by self-recovery often indicate a credential rotation rather
+than a transient platform outage.
 <!-- end-section-owner: cortex-code -->
 
 <!-- section-owner: co-work — key facts -->

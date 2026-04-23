@@ -83,6 +83,8 @@ in this list.
 
 If multiple app names appear, ask the user which installation to diagnose.
 
+> **Note:** Connector plugin apps (e.g. `OMNATA_SALESFORCE_PLUGIN`, `OMNATA_HUBSPOT_PLUGIN`) always contain `PLUGIN` in their name. They emit their own events to the same event table under their own app name. The workflows in this file focus on `OMNATA_SYNC_ENGINE` events. For plugin-level events (credential updates, API configuration, connection tests), filter on `ILIKE '%PLUGIN%'` — see "Step 4b: Secret and credential update events" in `references/monitoring-connections.md`.
+
 ### Step 2: Verify Omnata Events Exist
 
 Before running detailed queries, confirm events from the target Omnata app are present:
