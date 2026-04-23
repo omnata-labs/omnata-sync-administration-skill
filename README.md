@@ -15,18 +15,42 @@ The skill covers:
 
 ---
 
-## Installation
+## File structure
 
-Copy the prompt below and paste it into Cortex Code in your Snowflake account. Cortex will run the setup steps for you.
+When uploading files to this repository, use these exact paths (GitHub will create the subfolders automatically):
 
-> **Note:** Step 1 (API integration) requires `ACCOUNTADMIN`. If you don't have that role, ask your Snowflake account administrator to run Step 1 for you, then run Step 2 onwards yourself.
+```
+omnata-sync/SKILL.md
+omnata-sync/README.md
+omnata-sync/TEST-PROMPTS.md
+omnata-sync/references/error-knowledge-base.md
+omnata-sync/references/event-table-diagnostics.md
+omnata-sync/references/monitoring-connections.md
+omnata-sync/references/monitoring-inbound.md
+omnata-sync/references/monitoring-outbound.md
+omnata-sync/references/monitoring-sync-status.md
+omnata-sync/references/monitoring-warehouse-cost.md
+omnata-sync/references/support-handoff.md
+```
 
 ---
 
-### Cortex setup prompt
+## Installation
+
+There are two parts to installation:
+1. **One-time account setup** — create a GitHub API integration and Git repository object in Snowflake (requires `ACCOUNTADMIN` for the API integration step)
+2. **Workspace setup** — create a dedicated workspace and ask Cortex Code to install the skill into it
+
+Once installed, the skill persists in the workspace across sessions and activates automatically when you ask Omnata-related questions.
+
+---
+
+### Part 1 — Account setup
+
+Paste this prompt into any Cortex Code session (or run the SQL directly). The API integration step requires `ACCOUNTADMIN` — if you don't have that role, ask your Snowflake account administrator to run Step 1 for you first.
 
 ```
-Please set up the Omnata Sync Administration skill in this Snowflake account by running the following steps.
+Please set up the Omnata Sync Administration skill in this Snowflake account.
 
 **Step 1 — Create the GitHub API integration (requires ACCOUNTADMIN)**
 
@@ -39,7 +63,7 @@ Check whether an API integration for github.com/omnata-labs already exists. If n
 
 **Step 2 — Create the Git repository object**
 
-Ask me which database and schema I'd like to install the skill into, then create the Git repository there:
+Ask me which database and schema to use, then create the Git repository there:
 
     CREATE OR REPLACE GIT REPOSITORY <my_database>.<my_schema>.omnata_sync_skill
       API_INTEGRATION = omnata_github_integration
@@ -49,35 +73,67 @@ Ask me which database and schema I'd like to install the skill into, then create
 
     ALTER GIT REPOSITORY <my_database>.<my_schema>.omnata_sync_skill FETCH;
 
-**Step 4 — Confirm**
-
-Run the following and confirm the SKILL.md file is present:
+**Step 4 — Verify**
 
     LIST @<my_database>.<my_schema>.omnata_sync_skill/branches/main/omnata-sync/;
 
-Once the LIST shows the skill files, tell me the stage path to use when loading the skill in Cortex Code:
+Confirm the file listing shows SKILL.md and the references/ folder, then let me know the database, schema, and repository name so I can use them in Part 2.
+```
 
-    @<my_database>.<my_schema>.omnata_sync_skill/branches/main/omnata-sync/SKILL.md
+---
+
+### Part 2 — Workspace setup
+
+1. In Snowsight, go to **Workspaces** and create a new workspace called **Omnata Administration**
+2. Open the workspace and start a Cortex Code session
+3. Paste this prompt, substituting the database, schema, and repository name from Part 1:
+
+```
+In database <my_database>, schema <my_schema>, there is a Git repository called
+OMNATA_SYNC_SKILL containing a Cortex Code skill. Please install it as a permanent
+skill in this workspace by copying the files into .snowflake/cortex/skills/omnata-sync/.
+```
+
+Cortex will read the files from the Git repository stage and write them into the workspace skill directory.
+
+4. Verify the skill is loaded by asking:
+
+```
+What skills do you have available?
 ```
 
 ---
 
 ## Using the skill
 
-Once installed, load the skill in Cortex Code by pointing to the stage path confirmed in Step 4 above. Then try a prompt like:
+With the skill installed in your Omnata Administration workspace, just ask questions in plain language:
 
 ```
 Check the health of all my Omnata syncs and give me a summary of what's failing or needs attention.
+```
+
+```
+Which records are failing to sync in the CONTACTS to Airtable sync, and how do I fix them?
+```
+
+```
+How much is Omnata costing me in Snowflake credits? Which syncs are the most expensive?
 ```
 
 ---
 
 ## Updating to the latest version
 
-When a new version is published, pull the latest files with:
+When a new version is published, fetch the latest files and ask Cortex to reinstall:
+
+**Step 1 — Fetch the updated files:**
 
 ```sql
 ALTER GIT REPOSITORY <my_database>.<my_schema>.omnata_sync_skill FETCH;
 ```
 
-No other changes are needed — Cortex Code reads the files fresh each time the skill is invoked.
+**Step 2 — In your Omnata Administration workspace, ask Cortex to update:**
+
+```
+Please update the omnata-sync skill from the OMNATA_SYNC_SKILL git repository in <my_database>.<my_schema>.
+```
