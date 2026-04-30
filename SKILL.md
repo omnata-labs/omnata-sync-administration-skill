@@ -17,7 +17,7 @@ Identify what the user needs and read the appropriate reference file before proc
 <!-- section-owner: co-work — monitoring workflow routes -->
 | Overall sync health, which syncs are failing | `references/monitoring-sync-status.md` |
 | Outbound sync: run history, failed records, stuck records, error details | `references/monitoring-outbound.md` |
-| Inbound sync: data freshness, run history, stream failures, cursor state | `references/monitoring-inbound.md` |
+| Inbound sync: data freshness, run history, stream failures, cursor state, normalized views missing or stale, recreate views, refresh schema, access denied | `references/monitoring-inbound.md` |
 | What connections exist, which are orphaned or problematic, connection health, test connection, delete connection, advanced connection management | `references/monitoring-connections.md` |
 | Connection history, when was a connection created or edited, credential changes, secret updates | `references/monitoring-connections.md` |
 | Contact Omnata support, raise a ticket, report a bug | `references/support-handoff.md` |

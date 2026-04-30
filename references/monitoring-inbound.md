@@ -1,7 +1,7 @@
 <!-- owner: co-work — do not edit if you are not Claude Co-work. -->
 ---
 name: omnata-monitoring-inbound
-description: "Monitor and investigate inbound Omnata syncs — syncs that pull data from an external app into Snowflake. Use when: user asks about inbound sync health, data freshness, when data was last synced, which streams failed, stream error messages, stream cursor state, or why inbound data is stale or missing. Triggers: inbound sync, data freshness, last sync time, when was data synced, stream failed, stream error, inbound stream failure, new records, changed records, stream abandoned, stream cancelled, inbound sync error, stream not syncing."
+description: "Monitor and investigate inbound Omnata syncs — syncs that pull data from an external app into Snowflake. Use when: user asks about inbound sync health, data freshness, when data was last synced, which streams failed, stream error messages, stream cursor state, or why inbound data is stale or missing. Also covers normalized view problems: missing views, stale columns, SQL errors on query, access denied, recreating views, refreshing schemas. Triggers: inbound sync, data freshness, last sync time, when was data synced, stream failed, stream error, inbound stream failure, new records, changed records, stream abandoned, stream cancelled, inbound sync error, stream not syncing, normalized view, view missing, view error, schema stale, columns missing, recreate views, refresh schema, access denied inbound."
 ---
 
 # Omnata Inbound Sync Monitoring
@@ -279,7 +279,7 @@ last worked correctly and how much history has been affected by the current fail
 |---|---|---|
 | Auth / token error | Connection credentials expired or revoked | Re-authenticate the connection in Omnata UI |
 | Rate limit error | The source API is throttling requests | Reduce tuning parameters; run less frequently |
-| Schema / type error | Source app returned a changed field type | Trigger a full refresh for that stream |
+| Schema / type error | Source app returned a changed field type or new field added | Trigger a full refresh for that stream; if the normalized view is also stale or missing columns, follow the **Normalized View Troubleshooting** section below |
 | Timeout / cancellation | Stream takes too long to complete | Increase `time_limit_mins` or tune batch size |
 | One stream errors, others abandoned | Early failure stops downstream streams | Fix the errored stream; abandoned streams auto-recover |
 | `GLOBAL_ERROR` set (no stream-level errors) | Catastrophic failure before streams started | Check connection health; may need support investigation |
@@ -295,3 +295,217 @@ last worked correctly and how much history has been affected by the current fail
 - After Step 5 if the user wants to inspect or reset the stream cursor state
 - Offer next steps after Step 3: re-authenticate the connection, trigger a full refresh,
   adjust tuning parameters, or escalate via `references/support-handoff.md`
+
+---
+
+## Normalized View Troubleshooting
+
+<!-- contributor: Co-work — scenario structure, grants checks, UI guidance; Cortex Code — stored procedure signatures and version history -->
+
+Omnata lands inbound data in raw tables (`INBOUND_RAW`) and builds normalized views on top
+(`INBOUND_NORMALIZED`) that flatten `RECORD_DATA` JSON into typed columns. Problems with
+those views are distinct from sync failures — the data may be arriving correctly but the
+view definition is wrong, missing, or inaccessible.
+
+**The two-step fix — always in this order:**
+
+1. **Refresh schemas** — re-fetches the JSON schema from the source app's API and updates
+   what Omnata knows about the stream's fields. Required when the source schema has changed
+   or a plugin upgrade altered field definitions.
+2. **Recreate views** — drops and rebuilds the normalized view SQL based on the currently
+   stored schema.
+
+If the schema is already correct (e.g. a view was accidentally dropped), only step 2 is needed.
+If the schema has drifted, both steps are needed in order.
+
+### NV Step 1: Diagnose the Symptom
+
+**If the user hasn't specified which sync the view belongs to, ask before running anything.** A stream named 'contact' or 'account' may exist across multiple syncs. The sync slug is required for all subsequent steps. Ask: *"Which sync does this view belong to?"*
+
+| Symptom | Likely cause | Path |
+|---|---|---|
+| View throws SQL compilation error when queried | View definition stale after plugin update or schema change | Both steps |
+| Columns added to source not appearing in view | Schema refresh not triggered | Both steps |
+| Deleted source columns still showing with null values | View not rebuilt after schema change | Both steps |
+| View doesn't exist in `INBOUND_NORMALIZED` | View creation failed, or view was dropped | Recreate only (unless schema is also missing) |
+| Access denied / cannot query the view | Grants lost or permissions misconfigured | Grants check first |
+
+**Identify the configured (active) streams for this sync:**
+
+```sql
+SELECT
+    SYNC_SLUG,
+    OBJECT_KEYS(INBOUND_STREAMS_CONFIGURATION:included_streams) AS CONFIGURED_STREAMS,
+    INBOUND_STORAGE_CONFIGURATION
+FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC
+WHERE SYNC_SLUG = '<sync_slug>'
+```
+
+`CONFIGURED_STREAMS` returns the list of streams actually selected in the sync configuration.
+This is the source of truth for which streams are active — use this list when deciding which
+streams to refresh or recreate.
+
+> **Important:** `GET_INBOUND_ALL_STREAMS_VIEW_DEFINITIONS` (below) returns definitions for
+> **all streams the plugin exposes**, not just the ones configured in this sync. Do not use
+> it to determine which streams are active. Always use `CONFIGURED_STREAMS` above instead.
+
+**Ask the user:** Present the configured stream list and ask whether they want to refresh/recreate
+**all** configured streams or only specific ones. Use their answer to build the `ARRAY_CONSTRUCT()`
+argument for the procedures in NV Step 3/4.
+
+To preview current view definitions (optional — useful for debugging view SQL):
+
+```sql
+CALL OMNATA_SYNC_ENGINE.API.GET_INBOUND_ALL_STREAMS_VIEW_DEFINITIONS(
+    '<sync_slug>',
+    'main'
+);
+```
+
+Returns each stream's `table_name`, `view_body`, `snowflake_columns`, and `joins`. Note: this
+returns ALL streams the plugin knows about, not just configured ones.
+
+---
+
+### NV Step 2: Grants Check (access denied symptom only)
+
+Before investigating the view itself, check whether the view exists and what grants are on it.
+
+**Does the view exist?**
+
+```sql
+SHOW VIEWS LIKE '%<stream_name>%' IN SCHEMA <database>.<schema>;
+```
+
+If absent, skip to NV Step 4 (view missing). If present, check grants:
+
+```sql
+SHOW GRANTS ON VIEW <database>.<schema>."<view_name>";
+```
+
+Look for a `SELECT` privilege covering the user's role. Then check schema type:
+
+```sql
+SHOW SCHEMAS LIKE '%<schema_name>%' IN DATABASE <database>;
+```
+
+Check `IS_MANAGED_ACCESS`. In a managed access schema, only the schema owner can grant
+privileges — direct `GRANT SELECT` by other roles silently fails.
+
+| Finding | Action |
+|---|---|
+| `SELECT` exists for the user's role | Grants are fine — investigate view content instead |
+| No `SELECT` for the user's role | `GRANT SELECT ON VIEW <db>.<schema>."<view>" TO ROLE <role>` — or grant the `OMNATA_ADMINISTRATOR` app role |
+| Managed access schema, direct grant failed | `GRANT DATABASE ROLE <db>.OMNATA_ROLE TO ROLE <user_role>` — database role grants survive view recreation |
+| View doesn't exist | Proceed to NV Step 4 |
+
+---
+
+### NV Step 3: Fix — Schema Stale (SQL errors, missing or extra columns)
+
+**Option A — Omnata UI:**
+1. Navigate to the sync in the Omnata app
+2. Go to the **Data** tab
+3. Under **Normalized view schemas**, expand **View schema details**
+4. Click **Refresh Schemas** — wait for completion
+5. Click **Recreate All Views**
+
+**Option B — Stored procedures:**
+
+> ⚠️ These procedures are not documented in the official Omnata gitbook (release notes only).
+> Consumer-callable and reliable, but signatures may change between versions.
+> `REFRESH_INBOUND_STREAM_SCHEMAS` available since V3.60;
+> `RECREATE_INBOUND_NORMALIZED_VIEWS` since V3.17 (`IGNORE_ERRORS` added V3.126).
+
+**Step 1 — Refresh schemas from the source app:**
+
+```sql
+CALL OMNATA_SYNC_ENGINE.API.REFRESH_INBOUND_STREAM_SCHEMAS(
+    '<sync_slug>',
+    'main',
+    ARRAY_CONSTRUCT()   -- empty = all streams; or ARRAY_CONSTRUCT('issues', 'projects')
+);
+```
+
+Confirm the returned OBJECT shows `"success": true` before proceeding.
+
+**Step 2 — Recreate normalized views:**
+
+```sql
+CALL OMNATA_SYNC_ENGINE.API.RECREATE_INBOUND_NORMALIZED_VIEWS(
+    '<sync_slug>',
+    'main',
+    ARRAY_CONSTRUCT(),  -- empty = all streams; or specific stream names
+    TRUE                -- IGNORE_ERRORS: TRUE = skip failures and report them; FALSE = halt on first error
+);
+```
+
+The result object:
+
+```json
+{
+  "data": {
+    "streams_recreated": ["issues", "projects"],
+    "streams_failed": [],
+    "streams_skipped_due_to_missing_schema": []
+  },
+  "success": true
+}
+```
+
+| Result field | Meaning |
+|---|---|
+| `streams_recreated` | Views successfully rebuilt |
+| `streams_failed` | View creation failed — check the error |
+| `streams_skipped_due_to_missing_schema` | Schema not stored — re-run `REFRESH_INBOUND_STREAM_SCHEMAS` for these streams, then retry |
+
+If `streams_skipped_due_to_missing_schema` is non-empty, re-run the refresh targeting those
+stream names explicitly, then call recreate again.
+
+---
+
+### NV Step 4: Fix — View Missing
+
+Check whether the schema is stored — if yes, only recreate is needed:
+
+```sql
+CALL OMNATA_SYNC_ENGINE.API.GET_INBOUND_ALL_STREAMS_VIEW_DEFINITIONS(
+    '<sync_slug>',
+    'main'
+);
+```
+
+If the stream appears with a non-empty `view_body` → schema intact, run recreate only.
+If the stream is absent or `view_body` is empty → run refresh first, then recreate.
+
+```sql
+-- Recreate a specific stream only:
+CALL OMNATA_SYNC_ENGINE.API.RECREATE_INBOUND_NORMALIZED_VIEWS(
+    '<sync_slug>',
+    'main',
+    ARRAY_CONSTRUCT('<stream_name>'),
+    TRUE
+);
+```
+
+---
+
+### NV Step 5: Verify
+
+```sql
+-- Confirm the view is queryable:
+SELECT * FROM <database>.<schema>."<view_name>" LIMIT 5;
+
+-- Confirm column count:
+SELECT COUNT(*) AS COLUMN_COUNT
+FROM <database>.INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = '<schema>'
+  AND TABLE_NAME = '<view_name>';
+```
+
+If the view was recreated and the user previously had access, re-check grants — view
+recreation drops and rebuilds the object, which removes any direct `SELECT` grants.
+Database role grants (managed access schemas) survive recreation and don't need re-applying.
+
+Escalate to `references/support-handoff.md` if `streams_failed` is non-empty after retry
+and the error is not self-explanatory.

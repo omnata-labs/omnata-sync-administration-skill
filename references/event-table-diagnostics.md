@@ -263,6 +263,8 @@ For a healthy **inbound** run, the lifecycle milestones are:
 9. `sync_run_inbound_maintaining_normalized_views` — updating normalized views
 10. `sync_run_complete` — finished (includes `omnata.run_health_state`)
 
+If the run failed at phases 7–9, the root cause is likely a normalized view or schema problem rather than a sync/stream data failure. After extracting the stack trace here, route to the **Normalized View Troubleshooting** section in `references/monitoring-inbound.md`.
+
 If the run failed, the timeline will stop at the phase where the error occurred — this
 tells you whether the failure was during initialization, staging, syncing, or post-processing.
 

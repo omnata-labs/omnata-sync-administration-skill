@@ -126,7 +126,7 @@ in the destination app's configuration, credentials, or the data values being se
 
 | Error type | How to recognise |
 |---|---|
-| **Schema / type change** | Stream pulls a field with a changed type or new required field the connector doesn't handle |
+| **Schema / type change** | Stream pulls a field with a changed type or new required field the connector doesn't handle. If the raw data is arriving correctly but the normalized view is missing columns or throwing errors, follow the **Normalized View Troubleshooting** section in `references/monitoring-inbound.md` |
 | **Cursor / pagination error** | Error in `INBOUND_GLOBAL_ERROR_BY_STREAM` references a token, cursor, or page parameter |
 | **Scope / permission error** | OAuth scope no longer covers the stream's object type |
 
