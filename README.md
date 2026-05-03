@@ -58,11 +58,11 @@ Paste this prompt into any Cortex Code session:
 Please set up the Omnata Sync Administration skill in this Snowflake account.
 
 Step 1 — Create the GitHub API integration (requires ACCOUNTADMIN).
-Check whether an API integration for github.com/omnata-labs already exists. If not, create one:
+Check whether an API integration called omnata_github_integration already exists by running SHOW API INTEGRATIONS. If it does not exist, create one:
 
-    CREATE OR REPLACE API INTEGRATION omnata_github_integration
+    CREATE API INTEGRATION IF NOT EXISTS omnata_github_integration
       API_PROVIDER = git_https_api
-      API_ALLOWED_PREFIXES = ('https://github.com/omnata-labs')
+      API_ALLOWED_PREFIXES = ('https://github.com/omnata-labs/omnata-sync-administration-skill')
       ENABLED = TRUE;
 
 Step 2 — Create the Git repository object.
@@ -78,7 +78,7 @@ Step 3 — Fetch the latest files:
 
 Step 4 — Verify the skill files are present:
 
-    LIST @<my_database>.<my_schema>.omnata_sync_skill/branches/main/omnata-sync/;
+    LIST @<my_database>.<my_schema>.omnata_sync_skill/tags/v1.0.0/omnata-sync/;
 
 Confirm the listing shows SKILL.md and a references/ folder.
 ```
@@ -91,8 +91,9 @@ Confirm the listing shows SKILL.md and a references/ folder.
 
 ```
 In database <my_database>, schema <my_schema>, there is a Git repository called
-OMNATA_SYNC_SKILL containing a Cortex Code skill. Please install it as a permanent
-skill in this workspace by copying the files into .snowflake/cortex/skills/omnata-sync/.
+OMNATA_SYNC_SKILL containing a Cortex Code skill. Please install version v1.0.0 as a
+permanent skill in this workspace by copying the files from the tags/v1.0.0 path into
+.snowflake/cortex/skills/omnata-sync/.
 ```
 
 4. Verify the skill is loaded:
@@ -103,12 +104,22 @@ What skills do you have available?
 
 ### Updating (Snowsight)
 
-When a new version is published, open your Omnata Administration workspace and paste:
+When a new release is published, fetch the repo and install the new version:
+
+```sql
+ALTER GIT REPOSITORY <my_database>.<my_schema>.omnata_sync_skill FETCH;
+```
+
+Then in your Omnata Administration workspace:
 
 ```
-Please fetch the latest files from the OMNATA_SYNC_SKILL git repository in
-<my_database>.<my_schema> and update the omnata-sync skill in this workspace.
+Please update the omnata-sync skill from version v1.0.0 to v<new_version> using the
+OMNATA_SYNC_SKILL git repository in <my_database>.<my_schema>.
 ```
+
+> **Staying on `main`:** If you prefer always-latest rather than pinned releases, use
+> `branches/main` in place of `tags/<version>` in all paths above. Note that `main`
+> reflects work in progress and may change between fetches.
 
 ---
 
@@ -130,8 +141,8 @@ cd /path/to/your/project
 # Create the skills directory if it doesn't exist
 mkdir -p .snowflake/cortex/skills
 
-# Clone the skill directly into the skills directory
-git clone https://github.com/omnata-labs/omnata-sync-administration-skill \
+# Clone the skill at a specific release tag
+git clone --branch v1.0.0 https://github.com/omnata-labs/omnata-sync-administration-skill \
   .snowflake/cortex/skills/omnata-sync
 ```
 
@@ -145,7 +156,8 @@ What skills do you have available?
 
 ```bash
 cd .snowflake/cortex/skills/omnata-sync
-git pull
+git fetch --tags
+git checkout v<new_version>
 ```
 
 ---
