@@ -250,49 +250,32 @@ This surfaces the Snowflake infrastructure object names (`EXTERNAL_ACCESS_INTEGR
 
 ### Step 6: Advanced Connection Management (use with caution)
 
-> **Warning:** The procedures in this step are **undocumented** in the official Omnata gitbook. They exist in the `API` schema and work, but Omnata has not published guidance on them. Only suggest these when the user explicitly needs to perform these operations, and always warn them that these are advanced, undocumented procedures that may change without notice.
+> **Warning:** The procedures in this step are **undocumented** in the official Omnata gitbook. Only suggest these when the user explicitly needs to perform these operations. For full signatures, version notes, and guidance on all Omnata stored procedures, see `references/actions.md`.
 
-> **Critical constraint:** These procedures can only **delete connections** or **change metadata flags** on existing connections. They **cannot** create connections, edit credentials, re-authenticate, or modify the underlying External Access Integrations, Security Integrations, Network Rules, or Secrets. All of those operations require **Account Admin** privileges and must go through the **Omnata UI connection wizard**. Do not present these procedures as alternatives to the UI for connection setup or credential management.
+> **Critical constraint:** These procedures can only **delete connections** or **change metadata flags** on existing connections. They **cannot** create connections, edit credentials, re-authenticate, or modify External Access Integrations, Security Integrations, Network Rules, or Secrets. Those operations require Account Admin privileges and must go through the **Omnata UI connection wizard**.
 
 #### Delete a Connection
 
-Permanently deletes a connection. **This will fail if any syncs still reference it** — delete or reassign syncs first.
+Permanently deletes a connection. **Fails if any syncs still reference it** — confirm `TOTAL_SYNCS = 0` from Step 1 first.
 
 ```sql
--- ⚠️ UNDOCUMENTED — Advanced. Irreversible.
--- Arg: CONNECTION_ID (FLOAT) — get from Step 1 or Step 5 results
+-- ⚠️ UNDOCUMENTED. Irreversible.
 CALL OMNATA_SYNC_ENGINE.API.DELETE_CONNECTION(<connection_id>);
 ```
 
-**Before calling**, confirm:
-1. The connection has `TOTAL_SYNCS = 0` (from Step 1), or the user has already deleted/reassigned all syncs
-2. The user understands this is permanent
-
 #### Set Connection Environment Flags
 
-Changes whether a connection is marked as production and/or has certain environment flags, without going through the full UI edit flow.
-
 ```sql
--- ⚠️ UNDOCUMENTED — Advanced.
+-- ⚠️ UNDOCUMENTED.
 -- Args: CONNECTION_ID (NUMBER), IS_PRODUCTION (BOOLEAN), IS_SANDBOX (BOOLEAN)
 CALL OMNATA_SYNC_ENGINE.API.SET_CONNECTION_ENVIRONMENT(<connection_id>, <is_production>, <is_sandbox>);
 ```
 
-Use cases:
-- Promoting a staging connection to production after testing
-- Demoting a production connection to non-production during maintenance
+Use cases: promoting a staging connection to production, or demoting during maintenance.
 
-#### Other Undocumented Connection-Adjacent Procedures
+#### Other Undocumented Procedures
 
-These procedures are not documented but exist in the API schema. Mention them only if the user's question directly matches:
-
-| Procedure | Signature | Purpose |
-|---|---|---|
-| `SET_SYNC_CONNECTION` | `(FLOAT, FLOAT, FLOAT)` → OBJECT | Reassign a sync (or branch) to a different connection. Useful when migrating syncs between connections. Args appear to be SYNC_ID, CONNECTION_ID, BRANCH_ID. |
-| `SET_APP_SETTING` | `(VARCHAR, OBJECT)` → OBJECT | Set an application-level setting. The available setting names are not documented. |
-| `SET_DEFAULT_INBOUND_STORAGE_LOCATION` | `(OBJECT)` → OBJECT | Set where inbound sync raw tables and views are created by default. |
-
-> **Reminder:** These procedures are discovered from the installed application's API schema and are **not covered by Omnata's official documentation**. Behavior and signatures may change between Omnata versions. When in doubt, advise the user to contact Omnata support before using them.
+See `references/actions.md` — Connection Actions for `SET_SYNC_CONNECTION`, `SET_APP_SETTING`, and `SET_DEFAULT_INBOUND_STORAGE_LOCATION`.
 
 ## Stopping Points
 

@@ -23,6 +23,8 @@ When uploading files to this repository, use these exact paths (GitHub will crea
 omnata-sync/SKILL.md
 omnata-sync/README.md
 omnata-sync/TEST-PROMPTS.md
+omnata-sync/references/actions.md
+omnata-sync/references/configure-syncs.md
 omnata-sync/references/error-knowledge-base.md
 omnata-sync/references/event-table-diagnostics.md
 omnata-sync/references/monitoring-connections.md

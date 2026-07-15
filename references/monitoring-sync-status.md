@@ -160,7 +160,7 @@ Working from the most recent run backward, count how many consecutive runs have 
 
 **Ask the user before triggering.** Present the re-runnable syncs and ask which (if any) they'd like to trigger. Do not trigger automatically.
 
-**Execute the re-run:**
+**Execute the re-run** (for full parameter reference, see `references/actions.md` — Sync Lifecycle):
 
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.RUN_SYNC(
@@ -172,13 +172,6 @@ CALL OMNATA_SYNC_ENGINE.API.RUN_SYNC(
     false                                -- WAIT_FOR_COMPLETION (async)
 );
 ```
-
-Notes on `RUN_SYNC` parameters:
-- Use `SYNC_SLUG` (from `DATA_VIEWS.SYNC`) rather than `SYNC_ID` — it's human-readable and unambiguous
-- Set `SYNC_ID` to `NULL` when using `SYNC_SLUG` (they are mutually exclusive)
-- `BRANCH_NAME` = `'main'` for the primary sync; use the branch name if the user specifies a branch
-- `WAIT_FOR_COMPLETION = false` returns immediately after enqueuing — the sync runs asynchronously via a Snowflake task
-- `RUN_SOURCE_METADATA` tags this run as triggered by Cortex Code for traceability in run history
 
 **After triggering:**
 

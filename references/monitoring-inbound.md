@@ -410,12 +410,7 @@ privileges — direct `GRANT SELECT` by other roles silently fails.
 4. Click **Refresh Schemas** — wait for completion
 5. Click **Recreate All Views**
 
-**Option B — Stored procedures:**
-
-> ⚠️ These procedures are not documented in the official Omnata gitbook (release notes only).
-> Consumer-callable and reliable, but signatures may change between versions.
-> `REFRESH_INBOUND_STREAM_SCHEMAS` available since V3.60;
-> `RECREATE_INBOUND_NORMALIZED_VIEWS` since V3.17 (`IGNORE_ERRORS` added V3.126).
+**Option B — Stored procedures** (full parameter reference: `references/actions.md` — Inbound Sync Data Actions):
 
 **Step 1 — Refresh schemas from the source app:**
 
@@ -436,7 +431,7 @@ CALL OMNATA_SYNC_ENGINE.API.RECREATE_INBOUND_NORMALIZED_VIEWS(
     '<sync_slug>',
     'main',
     ARRAY_CONSTRUCT(),  -- empty = all streams; or specific stream names
-    TRUE                -- IGNORE_ERRORS: TRUE = skip failures and report them; FALSE = halt on first error
+    TRUE                -- IGNORE_ERRORS: TRUE = skip failures; FALSE = halt on first error
 );
 ```
 
@@ -492,15 +487,29 @@ CALL OMNATA_SYNC_ENGINE.API.RECREATE_INBOUND_NORMALIZED_VIEWS(
 
 ### NV Step 5: Verify
 
-```sql
--- Confirm the view is queryable:
-SELECT * FROM <database>.<schema>."<view_name>" LIMIT 5;
+**Confirm the view was recreated** by checking its creation timestamp:
 
--- Confirm column count:
+```sql
+SHOW VIEWS LIKE '%<stream_name>%' IN SCHEMA <database>.<normalized_schema>;
+```
+
+Check the `created_on` column — it should reflect the time of the `RECREATE_INBOUND_NORMALIZED_VIEWS`
+call. If the timestamp is old, the view was not actually rebuilt (check for errors in the recreate
+result above).
+
+**Confirm the view is queryable:**
+
+```sql
+SELECT * FROM <database>.<normalized_schema>."<sync_slug>_main_<stream_name>" LIMIT 5;
+```
+
+**Confirm column count matches expectations:**
+
+```sql
 SELECT COUNT(*) AS COLUMN_COUNT
 FROM <database>.INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_SCHEMA = '<schema>'
-  AND TABLE_NAME = '<view_name>';
+WHERE TABLE_SCHEMA = '<normalized_schema>'
+  AND TABLE_NAME = '<sync_slug>_main_<stream_name>';
 ```
 
 If the view was recreated and the user previously had access, re-check grants — view

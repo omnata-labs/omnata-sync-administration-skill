@@ -1,7 +1,7 @@
 <!-- owner: shared — both cortex-code and co-work may edit this file. Respect section ownership markers. Only append new routing rows or sections. Do not rewrite content owned by the other tool. -->
 ---
 name: omnata-sync
-description: "Manage and monitor Omnata Sync Engine syncs running as a Snowflake Native Application. Use when: user asks about Omnata sync status, sync health, failed syncs, sync errors, run history, stuck or delayed records, inbound data freshness, connection status, warehouse costs, sync cost attribution, cost in dollars, credit pricing, or wants to investigate why a sync or record isn't working. Triggers: omnata, sync status, sync health, sync failures, failed records, sync errors, sync run history, inbound sync, outbound sync, omnata connections, records not syncing, stuck records, omnata cost, omnata credits, warehouse cost, sync cost, omnata dollars, how much does omnata cost, omnata spend, omnata pricing, cost per sync."
+description: "Manage, monitor, and configure Omnata Sync Engine syncs running as a Snowflake Native Application. Use when: user asks about Omnata sync status, sync health, failed syncs, sync errors, run history, stuck or delayed records, inbound data freshness, connection status, warehouse costs, sync cost attribution, cost in dollars, credit pricing, wants to investigate why a sync or record isn't working, wants to bulk-configure an inbound sync with many streams from a file or list, or wants to configure an outbound sync, create a new outbound sync, or create a sync to a specific plugin. Triggers: omnata, sync status, sync health, sync failures, failed records, sync errors, sync run history, inbound sync, outbound sync, omnata connections, records not syncing, stuck records, omnata cost, omnata credits, warehouse cost, sync cost, omnata dollars, how much does omnata cost, omnata spend, omnata pricing, cost per sync, configure sync, bulk streams, create inbound sync, add streams from file, CONFIGURE_OMNATA_INBOUND_SYNC, CONFIGURE_OMNATA_OUTBOUND_SYNC, programmatic sync setup, configure an outbound sync, create a new outbound sync, create a sync to Slack, create a sync to Salesforce, create a sync to HubSpot."
 ---
 
 # Omnata Sync Engine
@@ -21,10 +21,13 @@ Identify what the user needs and read the appropriate reference file before proc
 | What connections exist, which are orphaned or problematic, connection health, test connection, delete connection, advanced connection management | `references/monitoring-connections.md` |
 | Connection history, when was a connection created or edited, credential changes, secret updates | `references/monitoring-connections.md` |
 | Contact Omnata support, raise a ticket, report a bug | `references/support-handoff.md` |
+| Run, pause, resume a sync; resync records; pre/post hooks; stored procedure reference; set storage location; reassign connection | `references/actions.md` |
+| Create a new sync, configure an outbound sync, configure an inbound sync, bulk add streams, configure Slack notifications, configure Salesforce sync, CONFIGURE_OMNATA_OUTBOUND_SYNC, CONFIGURE_OMNATA_INBOUND_SYNC | `references/configure-syncs.md` |
 <!-- end-section-owner: co-work -->
 <!-- section-owner: cortex-code — diagnostic and error classification routes -->
 | Deep diagnostic: stack traces, event logs, sync run lifecycle | `references/event-table-diagnostics.md` |
 | Warehouse costs, credits, dollars, sync cost attribution, pricing, optimisation | `references/monitoring-warehouse-cost.md` |
+| **Configure Syncs:** Configure an outbound sync, create a new outbound sync, create a sync to Slack/Salesforce/HubSpot, bulk-configure inbound sync streams, create sync with many streams, CONFIGURE_OMNATA_OUTBOUND_SYNC, CONFIGURE_OMNATA_INBOUND_SYNC | `references/configure-syncs.md` |
 <!-- end-section-owner: cortex-code -->
 
 <!-- section-owner: cortex-code — error classification and escalation instructions -->
