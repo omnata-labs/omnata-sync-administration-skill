@@ -84,35 +84,35 @@ column definition.
 
 ### Step 3: Call CONFIGURE_OMNATA_OUTBOUND_SYNC
 
-The procedure uses **positional parameters** (named parameters are not supported by the
-native app runtime). All OBJECT parameters must be constructed using `OBJECT_CONSTRUCT()`
-rather than `PARSE_JSON()` to ensure correct type matching.
+The procedure uses **named parameters** for easier handling of optional parameters. All OBJECT parameters can be constructed using `OBJECT_CONSTRUCT(key1,value1,key2,value2)` or `PARSE_JSON($${}$$)`.
 
-#### Procedure Signature (21 parameters)
+#### Procedure Signature
 
-| Position | Name | Type | Required | Description |
-|---|---|---|---|---|
-| 1 | `sync_slug` | VARCHAR | Yes | Kebab-case identifier. If exists, updates instead of creating. |
-| 2 | `sync_name` | VARCHAR | Yes | Human-readable display name |
-| 3 | `connection_slug` | VARIANT | Yes | Connection slug string (cast to VARIANT) |
-| 4 | `sync_parameters` | OBJECT | Yes | Plugin-specific parameters (see plugin sections below) |
-| 5 | `sync_schedule` | OBJECT | Yes | Schedule configuration |
-| 6 | `sync_strategy_name` | VARCHAR | Yes | Strategy name (plugin-specific, see plugin sections below) |
-| 7 | `field_mappings` | OBJECT | Yes | Field mapping or Jinja template configuration |
-| 8 | `source_table` | OBJECT | Yes | Source table reference (database, schema, table, id_column) |
-| 9 | `sync_tuning_parameters` | OBJECT | No | Tuning parameters (default NULL) |
-| 10 | `sync_tags` | ARRAY | No | Tags (default []) |
-| 11 | `multi_account` | BOOLEAN | No | Multi-account mode (default FALSE) |
-| 12 | `single_account_branching` | BOOLEAN | No | Enable branching (default FALSE) |
-| 13 | `branch_only_sync_parameters` | OBJECT | No | Branch-specific parameters (default NULL) |
-| 14 | `outbound_target_type` | VARCHAR | No | Target type override (default NULL) |
-| 15 | `single_account_branch_to_configure` | VARCHAR | No | Branch name e.g. 'dev' (default NULL) |
-| 16 | `single_environment_branching_mode` | VARCHAR | No | Branching mode (default NULL) |
-| 17 | `branch_outbound_record_state_behaviour` | VARCHAR | No | Default 'START_EMPTY' |
-| 18 | `branch_reopen_behaviour` | VARCHAR | No | Default 'CONTINUE' |
-| 19 | `branch_outbound_branch_record_filter` | OBJECT | No | Branch record filter (default NULL) |
-| 20 | `raise_errors` | BOOLEAN | No | Whether to raise errors (default FALSE) |
-| 21 | `current_user` | VARCHAR | No | Override current user (default NULL) |
+See https://docs.omnata.com/omnata-product-documentation/omnata-sync-for-snowflake/how-it-works/internal-stored-procedures for parameter example values.
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `sync_slug` | VARCHAR | Yes | Kebab-case identifier. If exists, updates instead of creating. |
+| `sync_name` | VARCHAR | Yes | Human-readable display name |
+| `connection_slug` | VARIANT | Yes | The connection slug for a sync or branch. Can be either a string (simple sync) or an object (multi-account or branching). In either case, always cast to VARIANT |
+| `sync_parameters` | OBJECT | Yes | Plugin-specific parameters (see plugin sections below) |
+| `sync_schedule` | OBJECT | Yes | Schedule configuration |
+| `sync_strategy_name` | VARCHAR | Yes | Strategy name (plugin-specific, see plugin sections below) |
+| `field_mappings` | OBJECT | Yes | Field mapping or Jinja template configuration |
+| `source_table` | OBJECT | Yes | Source table reference (database, schema, table, id_column) |
+| `sync_tuning_parameters` | OBJECT | No | Tuning parameters (default NULL) |
+| `sync_tags` | ARRAY | No | Tags (default []) |
+| `multi_account` | BOOLEAN | No | Multi-account mode (default FALSE) |
+| `single_account_branching` | BOOLEAN | No | Enable branching (default FALSE) |
+| `branch_only_sync_parameters` | OBJECT | No | Branch-specific parameters (default NULL) |
+| `outbound_target_type` | VARCHAR | No | Target type override (default NULL) |
+| `single_account_branch_to_configure` | VARCHAR | No | Branch name e.g. 'dev' (default NULL) |
+| `single_environment_branching_mode` | VARCHAR | No | Branching mode (default NULL) |
+| `branch_outbound_record_state_behaviour` | VARCHAR | No | Default 'START_EMPTY' |
+| `branch_reopen_behaviour` | VARCHAR | No | Default 'CONTINUE' |
+| `branch_outbound_branch_record_filter` | OBJECT | No | Branch record filter (default NULL) |
+| `raise_errors` | BOOLEAN | No | Whether to raise errors (default FALSE, meaning 'success' flag and 'data'/'error' flags are returned) |
+| `current_user` | VARCHAR | No | Override current user (default NULL) |
 
 #### Common Parameters (All Plugins)
 
@@ -379,7 +379,6 @@ Ask the user how they'd like to provide the list of streams/tables to sync:
 
 ### Processing the stream list
 
-- **Lowercase all stream names** -- Omnata plugins use lowercase identifiers
 - **Remove duplicates**
 - **Trim whitespace**
 - Store as a JSON array: `["account","department","transaction",...]`
@@ -403,97 +402,40 @@ Build a JSON object mapping each stream name to its primary key column(s):
 
 ---
 
-## Inbound Step 4: Execute with Retry-on-Failure
+## Inbound Step 4: Execute procedure
 
-The `CONFIGURE_OMNATA_INBOUND_SYNC` proc validates every stream against the plugin's
-catalog by calling the live source system. If any stream doesn't exist, the **entire call
-fails** -- it does not do partial success.
+The procedure uses **named parameters** for easier handling of optional parameters. All OBJECT parameters can be constructed using `OBJECT_CONSTRUCT(key1,value1,key2,value2)` or `PARSE_JSON($${}$$)`.
 
-Use this scripting pattern to handle invalid streams automatically:
+### Procedure Signature
 
-```sql
-DECLARE
-    removed_streams ARRAY DEFAULT ARRAY_CONSTRUCT();
-    all_streams ARRAY DEFAULT PARSE_JSON('<STREAMS_JSON_ARRAY>');
-    all_pks OBJECT DEFAULT PARSE_JSON('<STREAM_PKS_JSON_OBJECT>');
-    result OBJECT;
-    error_msg VARCHAR;
-    bad_stream VARCHAR;
-    max_retries INTEGER DEFAULT 50;
-    attempt INTEGER DEFAULT 0;
-    done BOOLEAN DEFAULT FALSE;
-BEGIN
-    WHILE (:done = FALSE AND :attempt < :max_retries) DO
-        attempt := :attempt + 1;
-        
-        CALL <OMNATA_DATABASE>.API.CONFIGURE_OMNATA_INBOUND_SYNC(
-            sync_slug => '<SYNC_SLUG>',
-            sync_name => '<SYNC_NAME>',
-            connection_slug => '<CONNECTION_SLUG>'::variant,
-            sync_parameters => PARSE_JSON('{}'),
-            sync_schedule => PARSE_JSON('{"mode":"manual","time_limit_mins":240,"warehouse":"<WAREHOUSE>"}'),
-            stream_names => :all_streams,
-            sync_strategy => '<SYNC_STRATEGY>'::variant,
-            storage_behaviour => '<STORAGE_BEHAVIOUR>'::variant,
-            sync_tuning_parameters => PARSE_JSON('{}'),
-            inbound_storage_location => PARSE_JSON('{"normalized_column":"{{column_name}}","normalized_database":"<OMNATA_DATABASE>","normalized_object":"{{sync_slug}}_{{branch_name}}_{{stream_name}}","normalized_schema":"INBOUND_NORMALIZED","raw_database":"<OMNATA_DATABASE>","raw_object":"{{sync_slug}}_{{branch_name}}_{{stream_name}}","raw_schema":"INBOUND_RAW","raw_table_standard_change_tracking":false,"raw_table_type":"standard"}'),
-            stream_primary_keys => :all_pks,
-            sync_strategy_bulk_configuration => 'auto',
-            storage_behaviour_bulk_configuration => '<STORAGE_BEHAVIOUR>'
-        ) INTO :result;
-        
-        IF (:result:success::BOOLEAN = TRUE) THEN
-            done := TRUE;
-        ELSE
-            error_msg := :result:error::VARCHAR;
-            IF (error_msg LIKE 'Stream % not found by the plugin') THEN
-                bad_stream := REPLACE(REPLACE(error_msg, 'Stream ', ''), ' not found by the plugin', '');
-                removed_streams := ARRAY_APPEND(:removed_streams, :bad_stream);
-                all_streams := ARRAY_EXCEPT(:all_streams, ARRAY_CONSTRUCT(:bad_stream));
-                all_pks := OBJECT_DELETE(:all_pks, :bad_stream);
-            ELSE
-                RETURN OBJECT_CONSTRUCT(
-                    'success', FALSE,
-                    'attempts', :attempt,
-                    'unexpected_error', error_msg,
-                    'removed_streams', :removed_streams,
-                    'remaining_stream_count', ARRAY_SIZE(:all_streams)
-                )::VARCHAR;
-            END IF;
-        END IF;
-    END WHILE;
-    
-    RETURN OBJECT_CONSTRUCT(
-        'success', :done,
-        'attempts', :attempt,
-        'configured_stream_count', ARRAY_SIZE(:all_streams),
-        'removed_streams', :removed_streams
-    )::VARCHAR;
-END;
-```
+See https://docs.omnata.com/omnata-product-documentation/omnata-sync-for-snowflake/how-it-works/internal-stored-procedures for parameter example values.
 
-### Placeholders to substitute
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `sync_slug` | VARCHAR | Yes | Kebab-case identifier. If exists, updates instead of creating. |
+| `sync_name` | VARCHAR | Yes | Human-readable display name |
+| `connection_slug` | VARIANT | Yes | The connection slug for a sync or branch. Can be either a string (simple sync) or an object (multi-account or branching). In either case, always cast to VARIANT |
+| `sync_parameters` | OBJECT | Yes | Plugin-specific parameters (see plugin sections below) |
+| `sync_schedule` | OBJECT | Yes | Schedule configuration |
+| `stream_names` | ARRAY | Yes | The names of all streams to include in the sync (this will remove any previously-added streams which are no longer included) |
+| `sync_strategy` | VARIANT | Yes | The sync strategy for all streams, or a mapping from stream name to sync strategy |
+| `storage_behaviour` | VARIANT | Yes | The storage behaviour for all streams, or a mapping from stream name to storage behaviour|
+| `stream_primary_keys` | VARIANT | Yes | A mapping of stream names to primary key field(s).
+Only required if the plugin does not provide the primary key definition. |
+| `stream_cursor_fields` | VARIANT | Yes | A mapping of stream names to cursor field.
+Only required if the plugin does not provide a default cursor field. |
+| `sync_tuning_parameters` | OBJECT | No | Tuning parameters (default NULL) |
+| `storage_location` | OBJECT | No | The location of the inbound tables, optionally keyed on account name.
+For single-account branches, the branch name is part of the template and therefore shares a definition with the main sync. |
+| `sync_tags` | ARRAY | No | Tags (default []) |
+| `multi_account` | BOOLEAN | No | Multi-account mode (default FALSE) |
+| `single_account_branching` | BOOLEAN | No | Enable branching (default FALSE) |
+| `branch_only_sync_parameters` | OBJECT | No | Branch-specific parameters (default NULL) |
+| `single_account_branch_to_configure` | VARCHAR | No | Branch name e.g. 'dev' (default NULL) |
+| `single_environment_branching_mode` | VARCHAR | No | Branching mode (default NULL) |
+| `raise_errors` | BOOLEAN | No | Whether to raise errors (default FALSE, meaning 'success' flag and 'data'/'error' flags are returned) |
+| `current_user` | VARCHAR | No | Override current user (default NULL) |
 
-| Placeholder | Description |
-|---|---|
-| `<OMNATA_DATABASE>` | Omnata Sync Engine database name (appears 4 times in the CALL) |
-| `<CONNECTION_SLUG>` | Connection slug from `DATA_VIEWS.CONNECTION` |
-| `<SYNC_SLUG>` | User-chosen kebab-case identifier |
-| `<SYNC_NAME>` | User-chosen human-readable name |
-| `<WAREHOUSE>` | Warehouse for sync execution |
-| `<SYNC_STRATEGY>` | `Incremental` or `Full Refresh` |
-| `<STORAGE_BEHAVIOUR>` | `merge` or `append` |
-| `<STREAMS_JSON_ARRAY>` | JSON array of lowercase stream names |
-| `<STREAM_PKS_JSON_OBJECT>` | JSON object mapping each stream to its PK array |
-
-### How the retry works
-
-1. Attempts to create/update the sync with ALL streams
-2. If a stream isn't found by the plugin, parses the error to get the stream name
-3. Removes that stream from the array and PKs object
-4. Retries -- converges in N+1 attempts where N is the number of invalid streams
-5. Each attempt takes ~15 seconds (plugin validates against the live source)
-6. Returns a JSON result with success status, configured count, and removed streams
 
 ### Key behaviours
 
@@ -533,8 +475,7 @@ WHERE s.SYNC_SLUG = '<SYNC_SLUG>'
 ORDER BY stream_name;
 ```
 
-Present the non-`["id"]` streams to the user for review. If any stream shows `["id"]` but
-the user knows it should have a composite PK, they can reconfigure it in the Omnata UI.
+Present the non-`["id"]` streams to the user for review.
 
 ---
 
@@ -542,11 +483,9 @@ the user knows it should have a composite PK, they can reconfigure it in the Omn
 
 Present to the user:
 
-1. **Success/failure** and number of attempts
-2. **Configured stream count** vs. original count
-3. **Removed streams** (not found by the plugin) -- these need to be added manually via the UI if they become available later, or the stream name may need correction
-4. **Non-standard PKs** from the reconciliation query -- confirm these look right
-5. **Next steps**: trigger the first run with `CALL <database>.API.RUN_SYNC(sync_slug => '<slug>')`
+1. **Success/failure** of the proc call
+2. **Stream configuration summary** from the reconciliation query -- this will show the actually configured cursor field(s) and primary key field for each stream.
+3. **Next steps**: trigger the first run with `CALL <database>.API.RUN_SYNC(sync_slug => '<slug>')`
 
 ---
 
