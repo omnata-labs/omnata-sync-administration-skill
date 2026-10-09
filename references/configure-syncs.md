@@ -1,7 +1,7 @@
 <!-- owner: cortex-code -->
 ---
 name: omnata-configure-syncs
-description: "Create or update Omnata syncs programmatically via CONFIGURE_OMNATA_OUTBOUND_SYNC or CONFIGURE_OMNATA_INBOUND_SYNC. Use when: user wants to configure an outbound sync, create a new outbound sync, create a sync to Slack or another plugin, or bulk-configure an inbound sync with many streams. Triggers: configure an outbound sync, create a new outbound sync, create a sync to Slack, create a sync to Salesforce, create a sync to HubSpot, CONFIGURE_OMNATA_OUTBOUND_SYNC, CONFIGURE_OMNATA_INBOUND_SYNC, deploy sync, notification sync, bulk configure, bulk streams, configure sync from file, create sync with streams, add many streams, programmatic sync setup."
+description: "Create or update Omnata syncs programmatically via CONFIGURE_OMNATA_OUTBOUND_SYNC or CONFIGURE_OMNATA_INBOUND_SYNC. Use when: user wants to configure an inbound or outbound sync, create a new sync, manage sync config in source control, deploy syncs via CI/CD, manage test/prod environments, bulk-configure streams, or create a sync to Slack or another plugin. Triggers: configure sync, create inbound sync, create outbound sync, create a sync to Slack, create a sync to Salesforce, create a sync to HubSpot, CONFIGURE_OMNATA_OUTBOUND_SYNC, CONFIGURE_OMNATA_INBOUND_SYNC, deploy sync, notification sync, bulk configure, bulk streams, configure sync from file, create sync with streams, add many streams, programmatic sync setup, source control sync, CI/CD sync, test prod sync."
 ---
 
 # Configure Syncs
@@ -9,7 +9,7 @@ description: "Create or update Omnata syncs programmatically via CONFIGURE_OMNAT
 Create or update syncs programmatically using stored procedures. This reference covers:
 
 - **Outbound syncs** (push data from Snowflake to an external app) -- organized by plugin
-- **Inbound syncs** (pull data from an external app into Snowflake) -- for bulk stream setup
+- **Inbound syncs** (pull data from an external app into Snowflake) -- procedure reference, examples, and use-case workflows
 
 Both procedures are **idempotent**: if the `sync_slug` already exists they update the sync;
 otherwise they create a new one.
@@ -333,24 +333,252 @@ sync's `OUTBOUND_FIELD_MAPPINGS` for the exact structure.
 
 ---
 
-# Inbound Syncs: Bulk Stream Configuration
+# Inbound Syncs
 
-This section covers creating or updating an inbound sync with a large number of streams
-using `CONFIGURE_OMNATA_INBOUND_SYNC`. This is the programmatic alternative to adding
-streams one-by-one through the UI.
+Create or update inbound syncs programmatically using `CONFIGURE_OMNATA_INBOUND_SYNC`. This procedure is the single entry point for all inbound sync configuration, whether creating a simple sync, bulk-adding streams, or managing test/prod environments.
 
-**Applicable plugins:** Salesforce, Marketing Cloud, NetSuite, and any other endpoint
-with many available streams/objects.
+The procedure is **idempotent**: calling it with an existing `SYNC_SLUG` updates the sync rather than creating a duplicate. It expects the **full configuration** each time. Omitting a stream from `STREAM_NAMES` removes it from the sync.
 
-## When to Use This
+## Use cases
 
-- Endpoint has many streams (10+) and the UI would be tedious
-- Customer has a list of record types (from an Excel export, CSV, or their source system)
-- Migrating an existing ETL pipeline to Omnata and need to replicate the same set of tables
+- **Simple sync creation** -- programmatically create an inbound sync for one or more streams
+- **Bulk stream setup** -- configure syncs with many streams (10+) from a file or list
+- **Source control and CI/CD** -- store sync configuration in version control and deploy via pipeline
+- **Test/prod environment management** -- use branching to manage separate configurations per environment
+- **Programmatic management** -- create and maintain many syncs across plugins
+
+## Prerequisites
+
+- Active Snowflake connection with the `OMNATA_ADMINISTRATOR` application role
+- An existing Omnata connection to the source plugin (identified by `connection_slug`)
+
+## Procedure reference
+
+Use **named parameters** (`=>`). All OBJECT parameters can be constructed using `OBJECT_CONSTRUCT(key1,value1,key2,value2)` or `PARSE_JSON($${}$$)`.
+
+### Example: manual schedule, single account
+
+```sql
+CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
+    SYNC_SLUG          => 'my-salesforce-inbound',
+    SYNC_NAME          => 'Salesforce to Snowflake',
+    CONNECTION_SLUG    => 'my-salesforce-connection'::VARIANT,
+    STREAM_NAMES       => ['Account', 'Contact', 'Opportunity'],
+    SYNC_STRATEGY      => 'Auto'::VARIANT,
+    STORAGE_BEHAVIOUR  => 'merge'::VARIANT,
+    SYNC_PARAMETERS    => OBJECT_CONSTRUCT(),
+    SYNC_SCHEDULE      => OBJECT_CONSTRUCT(
+        'mode', 'manual',
+        'warehouse', 'COMPUTE_WH',
+        'time_limit_mins', 60
+    ),
+    RAISE_ERRORS       => true
+);
+```
+
+### Example: hourly scheduled sync
+
+```sql
+CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
+    SYNC_SLUG          => 'hubspot-hourly',
+    SYNC_NAME          => 'HubSpot Hourly Inbound',
+    CONNECTION_SLUG    => 'hubspot-prod'::VARIANT,
+    STREAM_NAMES       => ['contacts', 'companies', 'deals'],
+    SYNC_STRATEGY      => 'Auto'::VARIANT,
+    STORAGE_BEHAVIOUR  => 'merge'::VARIANT,
+    SYNC_PARAMETERS    => OBJECT_CONSTRUCT(),
+    SYNC_SCHEDULE      => OBJECT_CONSTRUCT(
+        'mode', 'snowflake_task',
+        'sync_frequency', '0 * * * *',
+        'sync_frequency_name', 'Hourly',
+        'warehouse', 'COMPUTE_WH',
+        'time_limit_mins', 120
+    ),
+    RAISE_ERRORS       => true
+);
+```
+
+### VARIANT parameters
+
+`CONNECTION_SLUG`, `SYNC_STRATEGY`, and `STORAGE_BEHAVIOUR` are typed as `VARIANT` in the proc signature. Always cast string literals with `::VARIANT`:
+
+```sql
+CONNECTION_SLUG   => 'my-connection'::VARIANT,
+SYNC_STRATEGY     => 'Auto'::VARIANT,
+STORAGE_BEHAVIOUR => 'merge'::VARIANT,
+```
+
+When passing an object (per-stream overrides), the `OBJECT_CONSTRUCT` return type is already VARIANT-compatible:
+
+```sql
+SYNC_STRATEGY => OBJECT_CONSTRUCT(
+    'Account', 'Incremental',
+    'Contact', 'Full Refresh'
+)::VARIANT,
+```
+
+### SYNC_STRATEGY values
+
+`SYNC_STRATEGY` accepts a single string applied to all streams, or an object mapping stream names to individual strategies. Values are case-sensitive:
+
+| Value | Meaning |
+|---|---|
+| `'Auto'` | Engine chooses per stream (prefers Incremental when supported) |
+| `'Incremental'` | Only fetches records changed since last run |
+| `'Full Refresh'` | Fetches all records every run |
+
+### STORAGE_BEHAVIOUR values
+
+`STORAGE_BEHAVIOUR` accepts a single string or a per-stream object. Values are lowercase:
+
+| Value | Meaning |
+|---|---|
+| `'merge'` | Upserts on primary key (default) |
+| `'append'` | Appends all records, keeping history |
+| `'replace'` | Replaces table contents (deprecated, use `'merge'` with Full Refresh strategy instead) |
+
+### SYNC_SCHEDULE structure
+
+For a **single-account sync** (no multi-account, no branching), the schedule is a flat object with `mode` at the top level:
+
+```sql
+-- Manual (on-demand only)
+SYNC_SCHEDULE => OBJECT_CONSTRUCT(
+    'mode', 'manual',
+    'warehouse', 'COMPUTE_WH',
+    'time_limit_mins', 60
+)
+
+-- Scheduled via Snowflake task
+SYNC_SCHEDULE => OBJECT_CONSTRUCT(
+    'mode', 'snowflake_task',
+    'sync_frequency', '0 9 * * * America/New_York',
+    'sync_frequency_name', 'Custom',
+    'warehouse', 'COMPUTE_WH',
+    'time_limit_mins', 240
+)
+```
+
+The nested form `{"main": {...}, "dev": {...}}` is only used when `MULTI_ACCOUNT` or `SINGLE_ACCOUNT_BRANCHING` is enabled.
+
+Available schedule modes:
+
+| Mode | Required fields | Use case |
+|---|---|---|
+| `manual` | `warehouse` (optional, null = serverless), `time_limit_mins` | On-demand runs only |
+| `snowflake_task` | `sync_frequency`, `sync_frequency_name`, `warehouse`, `time_limit_mins` | Scheduled via Snowflake tasks |
+| `dbt` | `dbt_sync_model_name`, `warehouse`, `time_limit_mins` | Triggered by dbt package |
+| `dependent` | `selected_sync` (sync ID to depend on), `warehouse`, `time_limit_mins` | Runs after another sync |
+
+For `snowflake_task`, `sync_frequency_name` must be one of: `'1 min'`, `'5 mins'`, `'15 mins'`, `'Hourly'`, `'Daily'`, `'Custom'`.
+
+### Parameter reference
+
+See https://docs.omnata.com/omnata-product-documentation/omnata-sync-for-snowflake/how-it-works/internal-stored-procedures for additional parameter details.
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `sync_slug` | VARCHAR | Yes | Kebab-case identifier. If exists, updates instead of creating. |
+| `sync_name` | VARCHAR | Yes | Human-readable display name |
+| `connection_slug` | VARIANT | Yes | Connection slug string (cast with `::VARIANT`), or an object keyed by account/branch for multi-account |
+| `sync_parameters` | OBJECT | Yes | Plugin-specific parameters. Values can be terse `{'key': 'value'}` or full `{'key': {'value': '...', 'metadata': {}}}` |
+| `sync_schedule` | OBJECT | Yes | Schedule configuration (see SYNC_SCHEDULE structure above) |
+| `stream_names` | ARRAY | Yes | Stream names to include. Omitting a stream removes it from the sync |
+| `sync_strategy` | VARIANT | Yes | `'Auto'`, `'Full Refresh'`, or `'Incremental'` (cast with `::VARIANT`), or a per-stream object |
+| `storage_behaviour` | VARIANT | Yes | `'merge'`, `'append'`, or `'replace'` (cast with `::VARIANT`), or a per-stream object |
+| `stream_primary_keys` | OBJECT | No | `{"stream": "field"}` or `{"stream": ["f1","f2"]}`. Only needed when the plugin does not define the primary key |
+| `stream_cursor_fields` | OBJECT | No | `{"stream": "cursor_field"}`. Only needed when the plugin does not define a default cursor. Missing cursors downgrade Incremental to Full Refresh |
+| `sync_tuning_parameters` | OBJECT | No | Plugin tuning parameters (default NULL) |
+| `inbound_storage_location` | OBJECT | No | Custom storage location for raw/normalized tables |
+| `inbound_full_refresh_schedule` | OBJECT | No | Periodic full refresh schedule |
+| `sync_tags` | ARRAY | No | Arbitrary tags (default []). New tags are auto-registered in the UI |
+| `multi_account` | BOOLEAN | No | Multi-account mode (default FALSE). Mutually exclusive with `single_account_branching` |
+| `single_account_branching` | BOOLEAN | No | Enable branching (default FALSE) |
+| `single_account_branch_to_configure` | VARCHAR | No | Branch name, required when `single_account_branching` is true |
+| `raise_errors` | BOOLEAN | No | When true, errors throw a SQL exception. When false (default), errors return as `{"success": false, "error": "..."}` |
+| `include_new_streams` | BOOLEAN | No | Auto-include new streams the plugin discovers (default FALSE) |
+| `new_stream_sync_strategy` | VARCHAR | No | Strategy for auto-included streams (default `'Auto'`) |
+| `new_stream_storage_behaviour` | VARCHAR | No | Storage behaviour for auto-included streams (default `'merge'`) |
+| `excluded_streams` | ARRAY | No | Streams to exclude when `include_new_streams` is on (default []) |
+| `current_user` | VARCHAR | No | Override current user (default NULL) |
+
+### Return value
+
+```json
+{
+    "success": true,
+    "data": {
+        "sync_id": 123,
+        "sync_branch_id": null,
+        "created_sync": true,
+        "updated_sync": false,
+        "created_branch": false,
+        "updated_branch": false
+    }
+}
+```
+
+When `RAISE_ERRORS` is false (default) and an error occurs:
+
+```json
+{
+    "success": false,
+    "error": "Connection with slug my-connection not found"
+}
+```
+
+### Key behaviours
+
+- **Idempotent**: If the sync slug already exists, the proc updates it (adds/removes streams) rather than creating a duplicate
+- **Stream validation**: The plugin calls the live source system to verify each stream exists
+- **PK override**: The plugin's source-defined PK takes precedence over what you pass in `stream_primary_keys`
+- **Cursor fallback**: If a stream is set to Incremental but has no cursor field (and none is provided), the strategy is automatically downgraded to Full Refresh
+
+## Running and verifying a sync
+
+After creating the sync, trigger a run:
+
+```sql
+CALL OMNATA_SYNC_ENGINE.API.RUN_SYNC(
+    NULL,                    -- SYNC_ID (null when using slug)
+    'my-salesforce-inbound', -- SYNC_SLUG
+    'main',                  -- BRANCH_NAME
+    'external',              -- RUN_SOURCE_NAME
+    OBJECT_CONSTRUCT(),      -- RUN_SOURCE_METADATA
+    true,                    -- WAIT_FOR_COMPLETION
+    true,                    -- RAISE_ERRORS
+    current_user()           -- CURRENT_USER
+);
+```
+
+Check sync status:
+
+```sql
+SELECT
+    SYNC_SLUG,
+    SYNC_NAME,
+    HEALTH_STATE,
+    RUN_STATE,
+    SYNC_SCHEDULE:mode::VARCHAR AS SCHEDULE_MODE
+FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC_STATUS
+WHERE SYNC_SLUG = 'my-salesforce-inbound';
+```
+
+## Inbound notes
+
+- The `inbound_storage_location` uses Omnata template variables (`{{column_name}}`, `{{sync_slug}}`, `{{branch_name}}`, `{{stream_name}}`). These are not Snowflake or SQL variables; do not replace them.
+- Setting `"mode":"manual"` means the sync will not auto-schedule. The user triggers runs manually or sets a schedule later.
+- The `sync_parameters` field is plugin-specific (e.g. NetSuite may not use any, but other plugins may require configuration here).
 
 ---
 
-## Inbound Step 1: Gather Information
+# Use case: Bulk stream configuration
+
+When the endpoint has many streams (10+), building the `STREAM_NAMES` array and `STREAM_PRIMARY_KEYS` object by hand is tedious. This section covers how to gather and process a large stream list before passing it to `CONFIGURE_OMNATA_INBOUND_SYNC`.
+
+**Applicable plugins:** Salesforce, Marketing Cloud, NetSuite, and any other endpoint with many available streams/objects.
+
+## Bulk Step 1: Gather information
 
 Before generating the SQL, collect these from the user:
 
@@ -362,12 +590,10 @@ Before generating the SQL, collect these from the user:
 | **Sync slug** | Kebab-case identifier (e.g. `netsuite-prod-to-snowflake`) -- the user names this |
 | **Sync name** | Human-readable (e.g. `NetSuite Production to Snowflake`) |
 | **Warehouse** | Which warehouse to use for sync execution |
-| **Sync strategy** | `Incremental` (default) or `Full Refresh` |
-| **Storage behaviour** | `merge` (default, upserts on PK) or `append` |
+| **Sync strategy** | `'Auto'` (default), `'Incremental'`, or `'Full Refresh'` (case-sensitive) |
+| **Storage behaviour** | `'merge'` (default, upserts on PK) or `'append'` (lowercase) |
 
----
-
-## Inbound Step 2: Get the Stream List
+## Bulk Step 2: Get the stream list
 
 Ask the user how they'd like to provide the list of streams/tables to sync:
 
@@ -383,9 +609,7 @@ Ask the user how they'd like to provide the list of streams/tables to sync:
 - **Trim whitespace**
 - Store as a JSON array: `["account","department","transaction",...]`
 
----
-
-## Inbound Step 3: Build the Primary Keys Object
+## Bulk Step 3: Build the primary keys object
 
 Build a JSON object mapping each stream name to its primary key column(s):
 
@@ -398,55 +622,13 @@ Build a JSON object mapping each stream name to its primary key column(s):
 - `["id"]` is a safe default for most streams -- if the plugin has a source-defined PK, it will override your value automatically
 - Some streams use composite PKs (e.g. transaction line tables may use `["transaction","id"]` or `["journal","line"]`) -- the plugin handles this
 - Streams without a source-defined PK **require** an explicit PK or the proc will fail
-- After sync creation, always run the PK reconciliation query (Step 5) to verify
+- After sync creation, always run the PK reconciliation query (Bulk Step 5) to verify
 
----
+## Bulk Step 4: Execute procedure
 
-## Inbound Step 4: Execute procedure
+Use the procedure reference above with the gathered parameters. For bulk setups, the `STREAM_NAMES` array will be large and the `STREAM_PRIMARY_KEYS` object will have entries for each stream.
 
-The procedure uses **named parameters** for easier handling of optional parameters. All OBJECT parameters can be constructed using `OBJECT_CONSTRUCT(key1,value1,key2,value2)` or `PARSE_JSON($${}$$)`.
-
-### Procedure Signature
-
-See https://docs.omnata.com/omnata-product-documentation/omnata-sync-for-snowflake/how-it-works/internal-stored-procedures for parameter example values.
-
-| Name | Type | Required | Description |
-|---|---|---|---|
-| `sync_slug` | VARCHAR | Yes | Kebab-case identifier. If exists, updates instead of creating. |
-| `sync_name` | VARCHAR | Yes | Human-readable display name |
-| `connection_slug` | VARIANT | Yes | The connection slug for a sync or branch. Can be either a string (simple sync) or an object (multi-account or branching). In either case, always cast to VARIANT |
-| `sync_parameters` | OBJECT | Yes | Plugin-specific parameters (see plugin sections below) |
-| `sync_schedule` | OBJECT | Yes | Schedule configuration |
-| `stream_names` | ARRAY | Yes | The names of all streams to include in the sync (this will remove any previously-added streams which are no longer included) |
-| `sync_strategy` | VARIANT | Yes | The sync strategy for all streams, or a mapping from stream name to sync strategy |
-| `storage_behaviour` | VARIANT | Yes | The storage behaviour for all streams, or a mapping from stream name to storage behaviour|
-| `stream_primary_keys` | VARIANT | Yes | A mapping of stream names to primary key field(s).
-Only required if the plugin does not provide the primary key definition. |
-| `stream_cursor_fields` | VARIANT | Yes | A mapping of stream names to cursor field.
-Only required if the plugin does not provide a default cursor field. |
-| `sync_tuning_parameters` | OBJECT | No | Tuning parameters (default NULL) |
-| `storage_location` | OBJECT | No | The location of the inbound tables, optionally keyed on account name.
-For single-account branches, the branch name is part of the template and therefore shares a definition with the main sync. |
-| `sync_tags` | ARRAY | No | Tags (default []) |
-| `multi_account` | BOOLEAN | No | Multi-account mode (default FALSE) |
-| `single_account_branching` | BOOLEAN | No | Enable branching (default FALSE) |
-| `branch_only_sync_parameters` | OBJECT | No | Branch-specific parameters (default NULL) |
-| `single_account_branch_to_configure` | VARCHAR | No | Branch name e.g. 'dev' (default NULL) |
-| `single_environment_branching_mode` | VARCHAR | No | Branching mode (default NULL) |
-| `raise_errors` | BOOLEAN | No | Whether to raise errors (default FALSE, meaning 'success' flag and 'data'/'error' flags are returned) |
-| `current_user` | VARCHAR | No | Override current user (default NULL) |
-
-
-### Key behaviours
-
-- **Idempotent**: If the sync slug already exists, the proc updates it (adds/removes streams) rather than creating a duplicate
-- **Stream validation**: The plugin calls the live source system to verify each stream exists -- streams must be real record types accessible via the connection
-- **PK override**: The plugin's source-defined PK takes precedence over what you pass in `stream_primary_keys`
-- **Bulk configuration defaults**: `sync_strategy_bulk_configuration => 'auto'` and `storage_behaviour_bulk_configuration` control what happens when new streams are auto-included in future
-
----
-
-## Inbound Step 5: PK Reconciliation (Post-Creation)
+## Bulk Step 5: PK reconciliation (post-creation)
 
 After the sync is created, verify the actual PKs assigned. The plugin provides source-defined
 PKs that override the `["id"]` placeholder:
@@ -477,24 +659,13 @@ ORDER BY stream_name;
 
 Present the non-`["id"]` streams to the user for review.
 
----
-
-## Inbound Step 6: Report Results
+## Bulk Step 6: Report results
 
 Present to the user:
 
 1. **Success/failure** of the proc call
 2. **Stream configuration summary** from the reconciliation query -- this will show the actually configured cursor field(s) and primary key field for each stream.
-3. **Next steps**: trigger the first run with `CALL <database>.API.RUN_SYNC(sync_slug => '<slug>')`
-
----
-
-## Inbound Notes
-
-- The `inbound_storage_location` uses Omnata template variables (`{{column_name}}`, `{{sync_slug}}`, `{{branch_name}}`, `{{stream_name}}`) -- these are NOT Snowflake or SQL variables, do not replace them
-- The proc signature has 28 parameters but only 8 are required; the remaining use defaults
-- Setting `"mode":"manual"` means the sync won't auto-schedule -- the user triggers runs manually or sets a schedule later via `SET_SYNC_SCHEDULE`
-- The `sync_parameters` field is plugin-specific (e.g. NetSuite doesn't use any, but other plugins may require configuration here)
+3. **Next steps**: trigger the first run (see "Running and verifying a sync" above)
 
 ---
 
@@ -505,5 +676,6 @@ Present to the user:
 - After Outbound Step 3 if the user wants to review the SQL before running
 - After Jinja preview (Slack) if the user wants to adjust the message template
 - After Outbound Step 5 for full confirmation
-- After Inbound Step 4 if the user wants to review removed streams before continuing
-- After Inbound Step 6 for full confirmation
+- After inbound proc call if the user wants to review the result before running
+- After Bulk Step 4 if the user wants to review removed streams before continuing
+- After Bulk Step 6 for full confirmation
