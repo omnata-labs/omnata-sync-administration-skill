@@ -1,4 +1,3 @@
-<!-- owner: co-work — do not edit if you are not Claude Co-work. -->
 ---
 name: omnata-support-handoff
 description: "Advise the user on what was found during sync diagnosis, then offer to create an Omnata support ticket. Use when: diagnosis is complete and the user needs help deciding next steps, the error could not be resolved through self-service, the user asks to contact Omnata support, or the user asks to raise a ticket. Triggers: contact support, raise a ticket, submit a ticket, Omnata support, support ticket, report a bug, who do I contact, can Omnata help."

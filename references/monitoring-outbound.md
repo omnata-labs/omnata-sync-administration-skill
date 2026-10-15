@@ -1,4 +1,3 @@
-<!-- owner: co-work — do not edit if you are not Claude Co-work. -->
 ---
 name: omnata-monitoring-outbound
 description: "Monitor and investigate outbound Omnata syncs — syncs that push data from Snowflake to an external app. Use when: user asks about outbound sync health, run history, failed records, stuck or delayed records, destination errors, or why specific records aren't syncing. Triggers: outbound sync, records not syncing, destination failure, source failure, failed records, stuck records, delayed records, sync errors, record error, why didn't this record sync, sync run history outbound."

@@ -1,4 +1,3 @@
-<!-- owner: co-work — do not edit if you are not Claude Co-work. -->
 ---
 name: omnata-actions
 description: "Reference for all Omnata Sync Engine stored procedures and action-based features. Use when: user wants to run, pause, resume, or cancel a sync manually; wants to resync specific records; asks how to configure pre or post hooks; asks what stored procedures are available; needs to set application-level settings, storage locations, or reassign a sync to a different connection. Triggers: run sync, pause sync, resume sync, cancel sync, trigger sync, resync records, pre hook, post hook, before sync, after sync, stored procedures, omnata api, set storage location, reassign connection, app settings, skip record, force resync."
@@ -81,6 +80,47 @@ CALL OMNATA_SYNC_ENGINE.API.RESUME_SYNC(
 ```
 
 > **If resuming and also triggering immediately:** Call `RESUME_SYNC` first, then `RUN_SYNC`.
+
+---
+
+### Delete a Sync
+
+Permanently deletes a sync. Irreversible. Confirm the sync slug with the user first.
+
+```sql
+CALL OMNATA_SYNC_ENGINE.API.DELETE_SYNC(
+    '<sync_slug>',  -- SYNC_SLUG (VARCHAR)
+    NULL            -- SYNC_ID (NUMBER) — or NULL if using slug
+);
+```
+
+Returns `{"success": true, "data": {"deleted": true}}`. One call removes:
+- the sync record and its configuration
+- its raw tables in `OMNATA_SYNC_ENGINE.INBOUND_RAW` (inbound)
+- its normalized views in `OMNATA_SYNC_ENGINE.INBOUND_NORMALIZED` (inbound)
+
+The connection and any other syncs on it are untouched. Synced data goes with the raw tables, so if the user wants to keep it, copy it out first (e.g. `CREATE TABLE ... AS SELECT * FROM <normalized view>`).
+
+---
+
+### Clean Up Syncs and Connections
+
+Use this to remove test setups, or a connection and everything on it. Always list what will be deleted and get the user's confirmation before deleting anything.
+
+1. **List the syncs on the connection:**
+   ```sql
+   SELECT S.SYNC_ID, S.SYNC_SLUG, S.SYNC_NAME, S.SYNC_DIRECTION
+   FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC S
+   JOIN OMNATA_SYNC_ENGINE.DATA_VIEWS.CONNECTION C ON C.CONNECTION_ID = S.CONNECTION_ID
+   WHERE C.CONNECTION_SLUG = '<connection_slug>';
+   ```
+2. **Show the user the syncs and the connection, and confirm.** Mention that inbound data is deleted with each sync.
+3. **Delete each sync** with `DELETE_SYNC` (above).
+4. **Delete the connection** with `DELETE_CONNECTION` (see Connection Actions). It fails while any sync still references it.
+5. **Confirm** the connection and syncs no longer appear in `DATA_VIEWS.CONNECTION` and `DATA_VIEWS.SYNC`.
+6. **Local secrets.** If the connection was created with the secure secret path, offer `cortex secret delete <key>` for each stored secret.
+
+To abandon a connection that was never completed, use `CANCEL_CONNECTION_CREATION` instead (see `references/configure-connections.md`).
 
 ---
 
@@ -194,9 +234,8 @@ advise the user to contact Omnata support for guidance before modifying `APPLY_S
 
 > These procedures are **undocumented** in the official Omnata gitbook. They exist and work,
 > but may change without notice. Only suggest them when the user explicitly needs to perform
-> these operations. Always direct connection creation, editing, and credential management to
-> the **Omnata UI** — those operations require Account Admin privileges and cannot be done
-> from SQL.
+> these operations. To create a connection, use `references/configure-connections.md`.
+> To edit credentials or re-authenticate an existing connection, see "Edit an existing connection" in `references/configure-connections.md`.
 
 ### Delete a Connection
 
@@ -339,12 +378,14 @@ hook fails, the sync run is marked as complete but the hook failure is logged. C
 | `RUN_SYNC` | `(SYNC_ID, SYNC_SLUG, BRANCH_NAME, SOURCE_NAME, SOURCE_METADATA, WAIT)` | Trigger a run |
 | `PAUSE_SYNC` | `(SYNC_ID, SYNC_SLUG)` | Suspend schedule |
 | `RESUME_SYNC` | `(SYNC_ID, SYNC_SLUG)` | Re-enable schedule |
+| `DELETE_SYNC` | `(SYNC_SLUG, SYNC_ID)` | Delete a sync, its raw tables and normalized views. Irreversible. |
 | `CONFIGURE_OMNATA_OUTBOUND_SYNC` | 21 positional params — see `references/configure-syncs.md` | Create or update an outbound sync. Idempotent. |
 | `CONFIGURE_OMNATA_INBOUND_SYNC` | 28 params (8 required) — see `references/configure-syncs.md` | Create or update an inbound sync with bulk stream setup. Idempotent. |
 | `REFRESH_INBOUND_STREAM_SCHEMAS` | `(SYNC_SLUG, BRANCH_NAME, STREAM_NAMES)` | Pull latest schemas from source app. Min v3.60. |
 | `RECREATE_INBOUND_NORMALIZED_VIEWS` | `(SYNC_SLUG, BRANCH_NAME, STREAM_NAMES, IGNORE_ERRORS)` | Rebuild normalized views. Min v3.17. |
 | `GET_INBOUND_ALL_STREAMS_VIEW_DEFINITIONS` | `(SYNC_SLUG, BRANCH_NAME)` | Return CREATE VIEW SQL for all streams |
 | `DELETE_CONNECTION` | `(CONNECTION_ID)` | ⚠️ Undocumented. Irreversible. |
+| `BEGIN_CONNECTION_CREATION`, `BEGIN_CONNECTION_EDIT`, `UPDATE_CONNECTION_OBJECTS`, `COMPLETE_CONNECTION_CREATION`, `CANCEL_CONNECTION_CREATION` | see `references/configure-connections.md` | Create or edit a connection |
 | `SET_CONNECTION_ENVIRONMENT` | `(CONNECTION_ID, IS_PRODUCTION, IS_SANDBOX)` | ⚠️ Undocumented. |
 | `SET_SYNC_CONNECTION` | `(SYNC_ID, CONNECTION_ID, BRANCH_ID)` | ⚠️ Undocumented. Reassign sync to different connection. |
 | `SET_DEFAULT_INBOUND_STORAGE_LOCATION` | `(OBJECT)` | ⚠️ Undocumented. Set default inbound schema. |

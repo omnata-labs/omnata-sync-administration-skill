@@ -1,7 +1,6 @@
-<!-- owner: cortex-code -->
 ---
 name: omnata-configure-syncs
-description: "Create or update Omnata syncs programmatically via CONFIGURE_OMNATA_OUTBOUND_SYNC or CONFIGURE_OMNATA_INBOUND_SYNC. Use when: user wants to configure an inbound or outbound sync, create a new sync, manage sync config in source control, deploy syncs via CI/CD, manage test/prod environments, bulk-configure streams, or create a sync to Slack or another plugin. Triggers: configure sync, create inbound sync, create outbound sync, create a sync to Slack, create a sync to Salesforce, create a sync to HubSpot, CONFIGURE_OMNATA_OUTBOUND_SYNC, CONFIGURE_OMNATA_INBOUND_SYNC, deploy sync, notification sync, bulk configure, bulk streams, configure sync from file, create sync with streams, add many streams, programmatic sync setup, source control sync, CI/CD sync, test prod sync."
+description: "Create or update Omnata syncs programmatically via CONFIGURE_OMNATA_OUTBOUND_SYNC or CONFIGURE_OMNATA_INBOUND_SYNC. Use when: user wants to configure an inbound or outbound sync, create a new sync, manage sync config in source control, deploy syncs via CI/CD, manage test/prod environments, bulk-configure streams, or create a sync to Slack or another plugin. Triggers: configure sync, create inbound sync, create outbound sync, create a sync to Slack, create a sync to Salesforce, create a sync to HubSpot, CONFIGURE_OMNATA_OUTBOUND_SYNC, CONFIGURE_OMNATA_INBOUND_SYNC, deploy sync, notification sync, bulk configure, bulk streams, configure sync from file, create sync with streams, add many streams, programmatic sync setup, source control sync, CI/CD sync, test prod sync, run sync and check, delete sync, remove test sync."
 ---
 
 # Configure Syncs
@@ -17,8 +16,10 @@ otherwise they create a new one.
 ## Prerequisites
 
 - Active Snowflake connection with the `OMNATA_ADMINISTRATOR` application role
-- An existing Omnata connection to the target plugin (identified by `connection_slug`)
+- An existing Omnata connection to the target plugin (identified by `connection_slug`). If there isn't one, create it first with `references/configure-connections.md`, then come back here.
 - For outbound: the source table/view must exist and be granted SELECT to `OMNATA_SYNC_ENGINE`
+
+**Plugin pages.** Plugin-specific sync parameters, streams, strategies and known quirks are in `references/plugins/<plugin_id>.md` (index in `references/plugins/README.md`). Read the plugin's page before building a sync.
 
 ---
 
@@ -350,7 +351,7 @@ The procedure is **idempotent**: calling it with an existing `SYNC_SLUG` updates
 ## Prerequisites
 
 - Active Snowflake connection with the `OMNATA_ADMINISTRATOR` application role
-- An existing Omnata connection to the source plugin (identified by `connection_slug`)
+- An existing Omnata connection to the source plugin (identified by `connection_slug`). If there isn't one, create it with `references/configure-connections.md`.
 
 ## Procedure reference
 
@@ -551,18 +552,24 @@ CALL OMNATA_SYNC_ENGINE.API.RUN_SYNC(
 );
 ```
 
-Check sync status:
+`WAIT_FOR_COMPLETION => true` returns when the run finishes, with `syncRunId` and `syncRunHealth` (e.g. `HEALTHY`, `FAILED`). If the result shows `[object Object]`, read it with `SELECT TO_JSON($1) FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))`, straight after the call.
+
+Check the run:
 
 ```sql
-SELECT
-    SYNC_SLUG,
-    SYNC_NAME,
-    HEALTH_STATE,
-    RUN_STATE,
-    SYNC_SCHEDULE:mode::VARCHAR AS SCHEDULE_MODE
-FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC_STATUS
-WHERE SYNC_SLUG = 'my-salesforce-inbound';
+SELECT SYNC_RUN_ID, HEALTH_STATE, INBOUND_TOTAL_COUNT,
+       TO_JSON(INBOUND_GLOBAL_ERROR_BY_STREAM) AS STREAM_ERRORS, GLOBAL_ERROR
+FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC_RUN
+WHERE SYNC_RUN_ID = <sync_run_id>;
 ```
+
+For an inbound sync, also confirm records landed in the normalized view, `OMNATA_SYNC_ENGINE.INBOUND_NORMALIZED."<sync_slug>_main_<stream_name>"`.
+
+If the run failed, explain the per-stream or global error, check the plugin page for known causes, and see `references/error-knowledge-base.md`. A failed first run on a new connection is usually about the data or the sync settings, not the connection.
+
+## Deleting a sync
+
+To remove a sync (for example a test sync), use `DELETE_SYNC('<sync_slug>', NULL)`. It also removes the sync's raw tables and normalized views. See "Delete a Sync" and "Clean Up Syncs and Connections" in `references/actions.md`.
 
 ## Inbound notes
 

@@ -7,9 +7,9 @@ A Cortex Code skill for administering [Omnata Sync Engine](https://omnata.com) �
 - **Sync health** — overall status dashboard, failed and incomplete syncs, re-run triage, consecutive failure analysis
 - **Outbound syncs** — run history, failed records, error patterns, stuck and delayed records
 - **Inbound syncs** — data freshness, stream failures, cursor state, stream audit trail, normalized view repair
-- **Connections** — health assessment, lifecycle history, credential change detection, advanced connection management
-- **Actions** — run, pause and resume syncs, refresh schemas, recreate views, pre/post hook reference, full stored procedure interface
-- **Sync configuration** — create and update outbound syncs programmatically, bulk inbound stream setup via `CONFIGURE_OMNATA_OUTBOUND_SYNC` / `CONFIGURE_OMNATA_INBOUND_SYNC`
+- **Connections** — create connections end to end with CoCo (API key, token, service account and OAuth), health assessment, lifecycle history, credential change detection, advanced connection management
+- **Actions** — run, pause, resume and delete syncs, clean up test syncs and connections, refresh schemas, recreate views, pre/post hook reference, full stored procedure interface
+- **Sync configuration** — create and update inbound and outbound syncs programmatically via `CONFIGURE_OMNATA_INBOUND_SYNC` / `CONFIGURE_OMNATA_OUTBOUND_SYNC`, bulk stream setup, per-plugin reference pages
 - **Error diagnosis** — origin classification (Snowflake-side / endpoint-side / platform-level), remediation actions, error knowledge base
 - **Event table diagnostics** — full stack traces, sync run lifecycle timelines, recurring error detection
 - **Warehouse costs** — credit attribution per sync, dollar estimates, schedule optimisation recommendations
@@ -207,6 +207,7 @@ omnata-sync/SKILL.md
 omnata-sync/README.md
 omnata-sync/TEST-PROMPTS.md
 omnata-sync/references/actions.md
+omnata-sync/references/configure-connections.md
 omnata-sync/references/configure-syncs.md
 omnata-sync/references/error-knowledge-base.md
 omnata-sync/references/event-table-diagnostics.md
@@ -216,4 +217,5 @@ omnata-sync/references/monitoring-outbound.md
 omnata-sync/references/monitoring-sync-status.md
 omnata-sync/references/monitoring-warehouse-cost.md
 omnata-sync/references/support-handoff.md
+omnata-sync/references/plugins/  (README.md, _TEMPLATE.md and one page per plugin)
 ```

@@ -1,4 +1,3 @@
-<!-- owner: cortex-code — do not edit if you are not Cortex Code (Snowflake CLI). -->
 ---
 name: omnata-event-table-diagnostics
 description: "Deep diagnostic investigation using the Snowflake Event Table to trace Omnata sync failures. Use when: DATA_VIEWS errors need deeper investigation, stack traces are needed, the user wants to understand exactly where a sync failed in the code path, or when GLOBAL_ERROR or INBOUND_GLOBAL_ERROR_BY_STREAM are insufficient to diagnose the root cause. Triggers: event table, event logs, stack trace, deeper investigation, trace sync failure, why did the sync fail, debug sync, diagnose sync."

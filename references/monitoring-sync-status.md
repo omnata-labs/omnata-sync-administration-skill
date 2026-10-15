@@ -1,4 +1,3 @@
-<!-- owner: co-work — do not edit if you are not Claude Co-work. -->
 ---
 name: omnata-monitoring-sync-status
 description: "Check health and status of all Omnata Sync Engine syncs. Use when: user asks about Omnata sync status, sync health, failed syncs, sync errors, sync run history, or sync engine overview. Triggers: omnata sync status, omnata health, sync failures, sync errors, omnata sync engine status, omnata sync runs."

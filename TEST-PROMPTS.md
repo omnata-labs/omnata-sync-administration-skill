@@ -220,3 +220,40 @@ How much is Omnata costing me in Snowflake credits? Which syncs are the most exp
 - Step 3 uses TASK_HISTORY → QUERY_HISTORY join to attribute costs per sync
 - Ranks syncs by TOTAL_ELAPSED_SECS and provides dollar estimates
 - Provides optimisation recommendations (warehouse sizing, queuing, schedule adjustments)
+
+---
+
+## 13. configure-connections (end to end)
+
+**Tests:** Connection creation with CoCo, secret handling, admin approval, OAuth login, handoff to a sync
+
+```
+I've just installed the Google Sheets plugin. Set up a sync for me without using the UI.
+```
+
+**What to verify:**
+- Checks for existing connections to the plugin before creating one
+- Reads connection methods with `CONNECTION_FORM()` itself; doesn't ask the user to run lookups
+- Gives "where to get it" hints with console links before asking for any value
+- Checks its role up front and says ACCOUNTADMIN approval is needed
+- At the secret step, offers the template (default) or the secure path (Desktop, after the CLI check); never asks for a secret in chat
+- If the template is chosen, the user approves the specs (strict flow); otherwise asks before CoCo approves
+- Shows the OAuth login link as a labelled link plus code block, in the same message as the instructions, and asks own browser vs agentic browser
+- Completes the connection, then carries on to create and run a sync without being asked
+
+---
+
+## 14. Delete and clean up
+
+**Tests:** Sync deletion and ordered clean-up
+
+```
+Clean up my test Google Sheets connection and its syncs.
+```
+
+**What to verify:**
+- Lists the syncs on the connection and asks for confirmation before deleting
+- Warns that inbound data is deleted with each sync
+- Deletes each sync with `DELETE_SYNC('<slug>', NULL)`, then the connection with `DELETE_CONNECTION`
+- Confirms they're gone from `DATA_VIEWS.SYNC` and `DATA_VIEWS.CONNECTION`
+- Offers `cortex secret delete` for any locally stored secrets

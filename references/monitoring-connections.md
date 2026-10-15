@@ -1,7 +1,6 @@
-<!-- owner: co-work — do not edit if you are not Claude Co-work. -->
 ---
 name: omnata-monitoring-connections
-description: "Show the status of all Omnata connections and which syncs use them. Use when: user asks what connections are configured, wants to see which app connections exist, wants to find orphaned connections, wants to know which syncs use a particular connection, needs to understand which connections have failing syncs, wants to test a connection, asks about connection health, or needs to delete or reconfigure a connection. Triggers: omnata connections, connection status, what connections, connection health, orphaned connections, which syncs use, test connection, delete connection, connection environment, advanced connection."
+description: "Show the status of all Omnata connections and which syncs use them. Use when: user asks what connections are configured, wants to see which app connections exist, wants to find orphaned connections, wants to know which syncs use a particular connection, needs to understand which connections have failing syncs, wants to test a connection, asks about connection health, or needs to delete or reconfigure a connection. To create a new connection, use configure-connections.md. Triggers: omnata connections, connection status, what connections, connection health, orphaned connections, which syncs use, test connection, delete connection, connection environment, advanced connection."
 ---
 
 # Omnata Connection Overview
@@ -12,28 +11,18 @@ List all configured connections, their associated syncs, and flag any issues.
 
 - Active Snowflake connection with access to `OMNATA_SYNC_ENGINE.DATA_VIEWS`
 
-## Important: Connections MUST be created and configured through the Omnata UI
+## Creating and editing connections
 
-Omnata connections **cannot** be created, edited, re-authenticated, or tested via SQL stored procedures. The entire connection lifecycle — creation, credential configuration, testing, and editing — must go through the **Omnata web UI**.
+Users can create connections either in the **Omnata UI** or with **CoCo**.
 
-**Why:** Each Omnata connection requires Snowflake infrastructure objects that need **ACCOUNTADMIN** privileges to create and manage:
-- **External Access Integration** — controls which external endpoints the connection can reach
-- **Security Integration** — manages OAuth flows for the destination app
-- **Network Rule** — defines the allowed network endpoints
-- **Secrets** — stores OAuth tokens and API credentials
-
-The Omnata UI wizard orchestrates the creation of these objects, prompts the Account Admin to run the required `GRANT` statements, and then calls the plugin's `connect` method to validate connectivity. This multi-step flow cannot be replicated from SQL alone.
-
-**If the user asks to create, edit, test, or re-authenticate a connection**, tell them:
-> Omnata connections must be configured through the Omnata UI. This is because each connection requires External Access Integrations, Security Integrations, Network Rules, and Secrets — all of which need Account Admin privileges and a guided setup flow. To create a new connection, edit an existing one, or re-authenticate expired credentials, open the Omnata UI and use the connection wizard.
-
-Then offer to **assess connection health indirectly** using Step 3 below, which infers connection status from recent sync run outcomes.
+- **To create a connection with CoCo**, read `references/configure-connections.md` and follow it. It covers API key, token, service account and OAuth methods, from `BEGIN_CONNECTION_CREATION` through to a tested connection.
+- **To edit an existing connection with CoCo** (rotate credentials, change connection parameters, rename, change the production flag, re-authorize OAuth), follow "Edit an existing connection" in `references/configure-connections.md`. The Omnata UI can also do this.
+- **To test a connection**: there is no test-connection procedure available to customer roles. `COMPLETE_CONNECTION_CREATION` runs the plugin's connection test when a connection is created. For an existing connection, assess health from recent sync runs (Step 3 below).
 
 **Do NOT:**
-- Call or suggest calling any `TEST_CONNECTION` procedure — it does not exist
-- Suggest creating connections via `BEGIN_CONNECTION_CREATION` or `COMPLETE_CONNECTION_CREATION` — these are internal UI-only procedures
-- Suggest manually creating External Access Integrations, Security Integrations, or Network Rules outside the Omnata UI — the Omnata wizard manages these objects and expects to own them
-- Suggest any SQL-based workaround for connection creation or credential rotation
+- Call `TEST_CONNECTION`. It exists but isn't granted to customer roles.
+- Create External Access Integrations, Security Integrations, Network Rules or Secrets by hand for an Omnata connection. The plugin creates and owns them during `BEGIN_CONNECTION_CREATION` and `UPDATE_CONNECTION_OBJECTS`.
+- Ask the user to paste a credential into the chat. Use the template or secure options in `configure-connections.md`.
 
 ## Workflow
 
@@ -252,7 +241,7 @@ This surfaces the Snowflake infrastructure object names (`EXTERNAL_ACCESS_INTEGR
 
 > **Warning:** The procedures in this step are **undocumented** in the official Omnata gitbook. Only suggest these when the user explicitly needs to perform these operations. For full signatures, version notes, and guidance on all Omnata stored procedures, see `references/actions.md`.
 
-> **Critical constraint:** These procedures can only **delete connections** or **change metadata flags** on existing connections. They **cannot** create connections, edit credentials, re-authenticate, or modify External Access Integrations, Security Integrations, Network Rules, or Secrets. Those operations require Account Admin privileges and must go through the **Omnata UI connection wizard**.
+> **Scope:** These procedures only **delete connections** or **change metadata flags** on existing connections. To create a connection, use `references/configure-connections.md`. To edit credentials or re-authenticate an existing connection, see "Edit an existing connection" in the same reference.
 
 #### Delete a Connection
 

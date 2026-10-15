@@ -1,4 +1,3 @@
-<!-- owner: co-work — do not edit if you are not Claude Co-work. -->
 ---
 name: omnata-monitoring-inbound
 description: "Monitor and investigate inbound Omnata syncs — syncs that pull data from an external app into Snowflake. Use when: user asks about inbound sync health, data freshness, when data was last synced, which streams failed, stream error messages, stream cursor state, or why inbound data is stale or missing. Also covers normalized view problems: missing views, stale columns, SQL errors on query, access denied, recreating views, refreshing schemas. Triggers: inbound sync, data freshness, last sync time, when was data synced, stream failed, stream error, inbound stream failure, new records, changed records, stream abandoned, stream cancelled, inbound sync error, stream not syncing, normalized view, view missing, view error, schema stale, columns missing, recreate views, refresh schema, access denied inbound."
