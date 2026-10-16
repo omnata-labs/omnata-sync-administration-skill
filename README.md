@@ -210,6 +210,7 @@ omnata-sync/references/actions.md
 omnata-sync/references/branching.md
 omnata-sync/references/configure-connections.md
 omnata-sync/references/configure-syncs.md
+omnata-sync/references/data-management.md
 omnata-sync/references/error-knowledge-base.md
 omnata-sync/references/event-table-diagnostics.md
 omnata-sync/references/monitoring-connections.md
@@ -219,4 +220,5 @@ omnata-sync/references/monitoring-sync-status.md
 omnata-sync/references/monitoring-warehouse-cost.md
 omnata-sync/references/support-handoff.md
 omnata-sync/references/plugins/  (README.md, _TEMPLATE.md and one page per plugin)
+omnata-sync/scripts/render_storage_location.py
 ```

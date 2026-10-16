@@ -26,6 +26,7 @@ Identify what the user needs and read the appropriate reference file before proc
 | Contact Omnata support, raise a ticket, report a bug | `references/support-handoff.md` |
 | Run, pause, resume, delete a sync; resync records; pre/post hooks; stored procedure reference; set storage location; reassign connection | `references/actions.md` |
 | Create a new sync (connection must exist; plugin specifics in `references/plugins/<plugin_id>.md`), configure an outbound sync, configure an inbound sync, bulk add streams, configure Slack notifications, configure Salesforce sync, CONFIGURE_OMNATA_OUTBOUND_SYNC, CONFIGURE_OMNATA_INBOUND_SYNC | `references/configure-syncs.md` |
+| Data management: choose where inbound data lands, design or preview a storage location template, set or change the default storage location, INBOUND_STORAGE_LOCATION, SET_DEFAULT_INBOUND_STORAGE_LOCATION | `references/data-management.md` |
 | Deep diagnostic: stack traces, event logs, sync run lifecycle | `references/event-table-diagnostics.md` |
 | Warehouse costs, credits, dollars, sync cost attribution, pricing, optimisation | `references/monitoring-warehouse-cost.md` |
 | **Configure Syncs:** Configure an outbound sync, create a new outbound sync, create a sync to Slack/Salesforce/HubSpot, bulk-configure inbound sync streams, create sync with many streams, CONFIGURE_OMNATA_OUTBOUND_SYNC, CONFIGURE_OMNATA_INBOUND_SYNC | `references/configure-syncs.md` |
