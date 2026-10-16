@@ -126,7 +126,7 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Notes
 
-- Sheets must be table-shaped (header row, no merged cells, no blank rows or columns in the data range). If not, the run fails with an error like `1 columns passed, passed data had 2 columns`, meaning the header row has fewer named columns than the data. Fixes: set `header_row` to the real header row, name every column, or unmerge header cells.
+- Sheets must be table-shaped (header row, no merged cells, no blank rows or columns in the data range). If not, the run fails with an error like `1 columns passed, passed data had 2 columns`, meaning the header row has fewer named columns than the data. Fixes: set `header_row` to the real header row, name every column, or unmerge header cells. It can take more than one pass: each run reports the next mismatch. Ctrl/Cmd+End in the sheet jumps to the last used cell, which finds stray values in unnamed columns. After fixing headers, refresh the schema with `REFRESH_INBOUND_STREAM_SCHEMAS` before rerunning.
 - The stream list depends on `sync_mode` and the file parameters, so set those before choosing streams.
 
 ## Sources

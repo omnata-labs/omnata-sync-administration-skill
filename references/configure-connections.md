@@ -40,7 +40,7 @@ The overall workflow is: install the app and plugin, **create a connection**, **
 - "Get my <app> data into Snowflake", "sync <app>", "push this table to <app>": they want a sync, so check for a connection first.
 - "I just installed it, what now?": no connection yet, so start here.
 - "Set it up for me", "do it without the UI", "automate this": they want CoCo to drive the whole workflow, so keep going step to step without stopping for confirmation except where a person is needed.
-- A named environment ("test", "prod", "sandbox") or account: decide whether an existing connection fits, or a new one is needed, and set the production flag (Step 1d).
+- A named environment ("test", "prod", "sandbox", "dev") or account: decide whether an existing connection fits, or a new one is needed, and set the production flag (Step 1d). If the user mentions both a test and a production instance, read `references/branching.md`.
 
 **Check for an existing connection before creating one:**
 
@@ -170,7 +170,7 @@ Keep it to a few lines per value, with direct console links (not just menu paths
 |---|---|
 | Connection name | Human-readable, e.g. `<App> Prod` |
 | Connection slug | Kebab-case, unique, e.g. `<app>-prod`. Syncs refer to the connection by this |
-| Production environment | `true` for production, `false` for test/dev. Affects branching |
+| Production environment | Ask "Is this a production connection?" with **Yes as the default**. Every sync's main branch runs on a production connection. Choose No only for a separate sandbox, test or dev instance of the app; syncs created directly on a non-production connection can't be branched. Testing and branching choices come later, when creating the sync (`references/branching.md`) |
 | Connectivity option | `direct` for SaaS apps. `ngrok` and `privatelink` exist for private databases and aren't covered here |
 
 ## Step 2: Start the connection
