@@ -207,6 +207,7 @@ omnata-sync/SKILL.md
 omnata-sync/README.md
 omnata-sync/TEST-PROMPTS.md
 omnata-sync/references/actions.md
+omnata-sync/references/branching.md
 omnata-sync/references/configure-connections.md
 omnata-sync/references/configure-syncs.md
 omnata-sync/references/error-knowledge-base.md

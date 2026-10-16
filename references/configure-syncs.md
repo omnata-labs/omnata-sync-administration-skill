@@ -19,6 +19,8 @@ otherwise they create a new one.
 - An existing Omnata connection to the target plugin (identified by `connection_slug`). If there isn't one, create it first with `references/configure-connections.md`, then come back here.
 - For outbound: the source table/view must exist and be granted SELECT to `OMNATA_SYNC_ENGINE`
 
+**Test or production.** Before creating a sync, ask: "Are you trying this out on a test environment first, or going straight to your production environment?" (skip it if the request already says). Then follow "Asking the user" in `references/branching.md` to recommend either branching (strict config promotion) or separate standalone syncs (environment segregation for data). If branching is chosen, the main sync must use a production connection and be created before any branch.
+
 **Plugin pages.** Plugin-specific sync parameters, streams, strategies and known quirks are in `references/plugins/<plugin_id>.md` (index in `references/plugins/README.md`). Read the plugin's page before building a sync.
 
 ---
