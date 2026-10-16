@@ -284,22 +284,26 @@ CALL OMNATA_SYNC_ENGINE.API.SET_SYNC_CONNECTION(<sync_id>, <connection_id>, <bra
 
 ### Set Default Inbound Storage Location
 
-Configures where inbound sync raw tables and normalized views are created by default. Override
-this when you want inbound data in a specific database/schema rather than the Omnata default.
+Configures where inbound sync raw tables and normalized views are created by default (the same
+setting as Settings > Data Management). It takes the same keys as `INBOUND_STORAGE_LOCATION`
+(`raw_database`, `raw_schema`, `raw_object`, `normalized_database`, `normalized_schema`,
+`normalized_object`, `normalized_column`). Design and preview the template with
+`references/data-management.md` before calling it.
 
 ```sql
--- ⚠️ UNDOCUMENTED.
 CALL OMNATA_SYNC_ENGINE.API.SET_DEFAULT_INBOUND_STORAGE_LOCATION(
-    {
-        'database_name': '<target_database>',
-        'schema_name': '<target_schema>'
-    }
+    OBJECT_CONSTRUCT(
+        'raw_database',        '<raw_database>',
+        'raw_schema',          '<raw_schema>',
+        'normalized_database', '<normalized_database>',
+        'normalized_schema',   '<normalized_schema>'
+    )
 );
 ```
 
-> **Note:** Changing the default storage location applies to **new** inbound syncs. Existing
-> syncs retain their existing storage location. To move an existing sync's data, contact
-> Omnata support.
+> **Note:** Changing the default applies to **new** syncs created in the UI. Existing syncs keep
+> their stored location. `CONFIGURE_OMNATA_INBOUND_SYNC` does not read the default, so pass it
+> explicitly as `INBOUND_STORAGE_LOCATION`. To move an existing sync's data, contact Omnata support.
 
 ---
 
@@ -388,5 +392,5 @@ hook fails, the sync run is marked as complete but the hook failure is logged. C
 | `BEGIN_CONNECTION_CREATION`, `BEGIN_CONNECTION_EDIT`, `UPDATE_CONNECTION_OBJECTS`, `COMPLETE_CONNECTION_CREATION`, `CANCEL_CONNECTION_CREATION` | see `references/configure-connections.md` | Create or edit a connection |
 | `SET_CONNECTION_ENVIRONMENT` | `(CONNECTION_ID, IS_PRODUCTION, IS_SANDBOX)` | ⚠️ Undocumented. |
 | `SET_SYNC_CONNECTION` | `(SYNC_ID, CONNECTION_ID, BRANCH_ID)` | ⚠️ Undocumented. Reassign sync to different connection. |
-| `SET_DEFAULT_INBOUND_STORAGE_LOCATION` | `(OBJECT)` | ⚠️ Undocumented. Set default inbound schema. |
+| `SET_DEFAULT_INBOUND_STORAGE_LOCATION` | `(OBJECT)` | Set the default inbound storage location. See `references/data-management.md` |
 | `SET_APP_SETTING` | `(SETTING_NAME, VALUE)` | ⚠️ Undocumented. Use only on Omnata support instruction. |

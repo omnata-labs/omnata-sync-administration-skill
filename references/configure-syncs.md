@@ -574,6 +574,7 @@ To remove a sync (for example a test sync), use `DELETE_SYNC('<sync_slug>', NULL
 ## Inbound notes
 
 - The `inbound_storage_location` uses Omnata template variables (`{{column_name}}`, `{{sync_slug}}`, `{{branch_name}}`, `{{stream_name}}`). These are not Snowflake or SQL variables; do not replace them.
+- If the user cares where the data lands (database, schema or table naming), follow `references/data-management.md` before calling the procedure. When configuring a sync, check whether a custom default template is set, then ask whether to use the app default, the custom default (only if one is set) or a custom location for this sync. Omitting `INBOUND_STORAGE_LOCATION` gives the built-in app defaults, not the custom default from Settings, so pass that explicitly if one is set.
 - Setting `"mode":"manual"` means the sync will not auto-schedule. The user triggers runs manually or sets a schedule later.
 - The `sync_parameters` field is plugin-specific (e.g. NetSuite may not use any, but other plugins may require configuration here).
 
