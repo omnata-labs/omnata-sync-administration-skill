@@ -1,6 +1,6 @@
 ---
 name: omnata-actions
-description: "Reference for all Omnata Sync Engine stored procedures and action-based features. Use when: user wants to run, pause, resume, or cancel a sync manually; wants to resync specific records; asks how to configure pre or post hooks; asks what stored procedures are available; needs to set application-level settings, storage locations, or reassign a sync to a different connection. Triggers: run sync, pause sync, resume sync, cancel sync, trigger sync, resync records, pre hook, post hook, before sync, after sync, stored procedures, omnata api, set storage location, reassign connection, app settings, skip record, force resync."
+description: "Reference for all Omnata Sync Engine stored procedures and action-based features. Use when: user wants to run, pause, resume, rename or reschedule a sync; wants to resync or skip specific records; wants a full refresh of inbound streams; asks how to set up pre or post run hooks; asks what stored procedures are available; needs to set application-level settings, storage locations, or reassign a sync to a different connection. Triggers: run sync, pause sync, resume sync, trigger sync, rename sync, change schedule, set sync owner, resync records, skip record, force resync, mark records, full refresh, truncate and reload, move inbound tables, pre hook, post hook, SYNC_RUN_PRE_HOOK, SYNC_RUN_POST_HOOK, before sync, after sync, stored procedures, omnata api, set storage location, reassign connection, app settings, cancel sync run."
 ---
 
 # Omnata Sync Engine — Actions Reference
@@ -19,49 +19,61 @@ wants to take an action rather than monitor state.
 
 ### Run a Sync
 
-Triggers an immediate sync run. The sync must not already be `RUNNING` and must not be `PAUSED`.
+Triggers a sync run for main or a branch.
 
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.RUN_SYNC(
-    NULL,                              -- SYNC_ID (NUMBER)    — set to NULL when using slug
+    NULL,                              -- SYNC_ID (FLOAT)     — set to NULL when using slug
     '<sync_slug>',                     -- SYNC_SLUG (VARCHAR) — from DATA_VIEWS.SYNC
-    'main',                            -- BRANCH_NAME (VARCHAR)
+    'main',                            -- BRANCH_NAME (VARCHAR) — 'main', or a branch name
     'external',                        -- RUN_SOURCE_NAME (VARCHAR)
     {'triggered_by': 'cortex_code'},   -- RUN_SOURCE_METADATA (OBJECT)
-    false                              -- WAIT_FOR_COMPLETION (BOOLEAN)
+    true,                              -- WAIT_FOR_COMPLETION (BOOLEAN)
+    true,                              -- RAISE_ERRORS (BOOLEAN)
+    CURRENT_USER()                     -- CURRENT_USER (VARCHAR)
 );
 ```
 
 | Parameter | Type | Notes |
 |---|---|---|
-| `SYNC_ID` | NUMBER | Use this **or** `SYNC_SLUG`, not both. Set the unused one to `NULL`. |
+| `SYNC_ID` | FLOAT | Use this **or** `SYNC_SLUG`, not both. Set the unused one to `NULL`. |
 | `SYNC_SLUG` | VARCHAR | Preferred — human-readable and unambiguous. From `DATA_VIEWS.SYNC.SYNC_SLUG`. |
-| `BRANCH_NAME` | VARCHAR | Always `'main'` unless the sync uses advanced branching mode. |
+| `BRANCH_NAME` | VARCHAR | `'main'` for the main sync (also the default when `NULL`), or a branch name. See `references/branching.md`. |
 | `RUN_SOURCE_NAME` | VARCHAR | Label for the trigger origin — use `'external'` for Cortex Code-initiated runs. |
 | `RUN_SOURCE_METADATA` | OBJECT | Optional metadata attached to the run — useful for audit trail. |
-| `WAIT_FOR_COMPLETION` | BOOLEAN | `false` = async (returns immediately after enqueue). `true` = blocks until run finishes. |
+| `WAIT_FOR_COMPLETION` | BOOLEAN | Default `true`: blocks until the run finishes. `false`: returns once the run is enqueued. |
+| `RAISE_ERRORS` | BOOLEAN | `true` raises a SQL error if the run fails. Use with `WAIT_FOR_COMPLETION = true`. |
+| `CURRENT_USER` | VARCHAR | Needed when the sync or branch has a designated owner (`SET_SYNC_OWNER`): only the owner can run it. |
 
-**After triggering,** confirm the run was enqueued by checking the returned OBJECT, then query for the new run:
+**Behaviour:**
+- If the sync is already running, the call succeeds without starting another run and returns `wasAlreadyRunning: true`, unless the current run has passed its time limit.
+- A paused sync or branch raises an error. Resume it first.
+- Main must have a connection.
+
+The result includes `syncRunId`, and `syncRunHealth` when waiting. If it shows `[object Object]`, read it with `SELECT TO_JSON($1) FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))`. To check a run:
 
 ```sql
-SELECT SYNC_RUN_ID, RUN_STATE, HEALTH_STATE, RUN_START_DATETIME
+SELECT SYNC_RUN_ID, HEALTH_STATE, RUN_START_DATETIME, RUN_END_DATETIME, INBOUND_TOTAL_COUNT, GLOBAL_ERROR
 FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC_RUN
 WHERE SYNC_ID = (SELECT SYNC_ID FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC WHERE SYNC_SLUG = '<sync_slug>')
 ORDER BY RUN_START_DATETIME DESC
 LIMIT 1;
 ```
 
+### Cancel a Sync Run
+
+There is no cancel procedure available to customer roles: `CANCEL_SYNC_RUN` exists but isn't granted to the app roles. To stop a running sync, use the Omnata UI. To stop future runs, pause the sync.
+
 ---
 
 ### Pause a Sync
 
-Suspends the sync schedule. The sync will not run until resumed. Existing in-progress runs are
-not cancelled.
+Pauses a sync or branch, and suspends its Snowflake scheduler task if Omnata manages the schedule. It fails if the sync is currently running; wait for the run to finish first. If it's already paused, it returns `wasAlreadyPaused: true`.
 
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.PAUSE_SYNC(
-    NULL,          -- SYNC_ID (NUMBER) — or NULL if using slug
-    '<sync_slug>'  -- SYNC_SLUG (VARCHAR)
+    '<sync_slug>',  -- SYNC_SLUG (VARCHAR)
+    'main'          -- BRANCH_NAME (VARCHAR) — 'main' (or NULL), or a branch name
 );
 ```
 
@@ -69,17 +81,39 @@ CALL OMNATA_SYNC_ENGINE.API.PAUSE_SYNC(
 
 ### Resume a Sync
 
-Re-enables the sync schedule after a pause. Does not immediately trigger a run — the sync will
-run at its next scheduled interval.
+Re-enables a paused sync or branch and resumes its scheduler task. It doesn't trigger a run; the sync runs at its next scheduled time. If it isn't paused, it returns `wasAlreadyResumed: true`.
 
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.RESUME_SYNC(
-    NULL,          -- SYNC_ID (NUMBER) — or NULL if using slug
-    '<sync_slug>'  -- SYNC_SLUG (VARCHAR)
+    '<sync_slug>',  -- SYNC_SLUG (VARCHAR)
+    'main'          -- BRANCH_NAME (VARCHAR) — 'main' (or NULL), or a branch name
 );
 ```
 
 > **If resuming and also triggering immediately:** Call `RESUME_SYNC` first, then `RUN_SYNC`.
+
+---
+
+### Rename, Reschedule or Assign an Owner
+
+```sql
+-- Rename (display name only)
+CALL OMNATA_SYNC_ENGINE.API.SET_SYNC_NAME('<sync_slug>', '<new name>');
+
+-- Change the schedule. MULTI_ACCOUNT is false unless the sync is multi-account.
+-- BRANCH_NAME NULL means main. The schedule object has the same shape as SYNC_SCHEDULE in configure-syncs.md.
+CALL OMNATA_SYNC_ENGINE.API.SET_SYNC_SCHEDULE(
+    '<sync_slug>', false,
+    OBJECT_CONSTRUCT('mode', 'manual', 'warehouse', '<warehouse>', 'time_limit_mins', 60),
+    NULL
+);
+
+-- Set an owner on a sync or branch: only that user can then configure or run it.
+-- Pass NULL as the owner to clear it.
+CALL OMNATA_SYNC_ENGINE.API.SET_SYNC_OWNER('<sync_slug>', '<branch_name or NULL>', '<snowflake_user>');
+```
+
+**Change a sync's slug** with `SET_SYNC_SLUG(<sync_id>, '<new_slug>')`. Use with caution: external tools such as dbt, and `RUN_SYNC` calls in scheduled jobs, may still use the old slug.
 
 ---
 
@@ -186,31 +220,81 @@ CALL OMNATA_SYNC_ENGINE.API.RECREATE_INBOUND_NORMALIZED_VIEWS(
 
 ### Get Inbound View Definitions
 
-Returns the SQL `CREATE VIEW` definitions for all normalized views in an inbound sync.
-Use this to inspect what columns each view exposes, or to manually recreate a specific view.
+Returns the `CREATE VIEW` definitions for all normalized views in an inbound sync, as an OBJECT. Use it to inspect the columns each view exposes, or to create the views yourself (e.g. in dbt).
 
 ```sql
-SELECT * FROM TABLE(
-    OMNATA_SYNC_ENGINE.API.GET_INBOUND_ALL_STREAMS_VIEW_DEFINITIONS(
-        '<sync_slug>',
-        'main'
-    )
+CALL OMNATA_SYNC_ENGINE.API.GET_INBOUND_ALL_STREAMS_VIEW_DEFINITIONS(
+    '<sync_slug>',
+    'main'
 );
 ```
+
+For one stream: `CALL OMNATA_SYNC_ENGINE.API.GET_INBOUND_STREAM_VIEW_DEFINITION('<sync_slug>', 'main', '<stream_name>', false)`.
+
+---
+
+### Full Refresh of Inbound Streams
+
+Marks streams so the **next run** re-reads them in full. `TRUNCATE = true` empties the raw tables first; `false` keeps existing rows and merges over them.
+
+```sql
+CALL OMNATA_SYNC_ENGINE.API.MARK_STREAMS_FOR_FULL_REFRESH(
+    <sync_id>,                              -- SYNC_ID (FLOAT)
+    'main',                                 -- BRANCH_NAME (VARCHAR)
+    ARRAY_CONSTRUCT('Account', 'Contact'),  -- STREAMS (ARRAY)
+    false                                   -- TRUNCATE (BOOLEAN)
+);
+```
+
+- Undo before the next run with `UNMARK_STREAMS_FOR_FULL_REFRESH(<sync_id>, 'main', ARRAY_CONSTRUCT(...))`.
+- For a regular full refresh, set a schedule. It's checked at each run and doesn't add extra runs:
+  ```sql
+  CALL OMNATA_SYNC_ENGINE.API.SET_FULL_REFRESH_SCHEDULE(
+      '<sync_slug>', 'main',
+      OBJECT_CONSTRUCT('frequency', '0 0 * * 0 UTC', 'frequency_name', 'Weekly', 'truncate_inbound', false)
+  );
+  ```
+  `frequency_name` is one of `Always`, `Daily`, `Weekly`, `Monthly nth day`, `Monthly last day`, `Monthly nth weekday`, `Monthly last weekday`, `Custom`.
+- `MARK_PLUGIN_FOR_FULL_REFRESH('<PLUGIN_FQN>', <truncate>)` marks every stream of every sync and branch for a plugin. Confirm with the user before using it.
+
+---
+
+### Move an Inbound Sync's Tables
+
+Changes where an existing inbound sync's raw tables and normalized views live, **and moves the existing tables and views** to the new location. Changing the default storage location doesn't do this.
+
+```sql
+CALL OMNATA_SYNC_ENGINE.API.SET_INBOUND_SYNC_LOCATION(
+    NULL,               -- SYNC_ID (FLOAT) — or NULL if using slug
+    '<sync_slug>',      -- SYNC_SLUG (VARCHAR)
+    <storage_location>, -- INBOUND_STORAGE_LOCATION (OBJECT), same keys as INBOUND_STORAGE_LOCATION
+    NULL                -- MULTI_ACCOUNT_KEY (VARCHAR) — only for multi-account syncs
+);
+```
+
+Design and preview the location first with `references/data-management.md`. Grants on the moved views may need re-applying.
+
+---
+
+### Clean Up Orphaned Inbound Objects
+
+Lists or drops inbound tables or views in the Sync Engine's database that no longer belong to any sync. Always run with `LIST_ONLY = true` first and check the list with the user.
+
+```sql
+CALL OMNATA_SYNC_ENGINE.API.CLEANUP_INBOUND_OBJECTS('table', true);  -- OBJECT_TYPE 'table' or 'view'; LIST_ONLY
+```
+
+---
+
+### Override Inbound Stream State
+
+`SET_INBOUND_SYNC_STATE('<sync_slug>', '<stream_name>', <state_object>)`, or `SET_INBOUND_SYNC_STATE('<sync_slug>', <streams_state_object>)` keyed by stream name, overwrites the stored cursor state. **Only under the direction of Omnata support**: plugins maintain their own state, and a wrong state can skip or duplicate data.
 
 ---
 
 ## Record-Level Actions
 
-### Resync a Record
-
-To force a specific outbound record to be re-sent to the destination on the next sync run,
-update its `APPLY_STATE` in the source table (or using the Omnata UI record management).
-Records with `APPLY_STATE = 'RESYNC_REQUESTED'` are re-queued for the next run regardless
-of whether they previously succeeded.
-
-> **Note:** Record-level `APPLY_STATE` is managed by Omnata on outbound sync records.
-> The `APPLY_STATE` values and their meanings:
+These apply to **outbound** syncs. Each record's state is held by Omnata (`DATA_VIEWS.OUTBOUND_SYNC_RECORD_STATE`), not in your source table, so change it with these procedures, not by editing source data.
 
 | APPLY_STATE | Meaning |
 |---|---|
@@ -224,9 +308,46 @@ of whether they previously succeeded.
 | `ACTIVE` | Currently being processed |
 | `NOT_REQUIRED` | No action needed (record already in sync with destination) |
 
-The recommended way to trigger a resync for one or more records is through the **Omnata UI**
-(record management tab). If bulk resync is needed via SQL, this is an advanced operation —
-advise the user to contact Omnata support for guidance before modifying `APPLY_STATE` directly.
+### Resync Records
+
+Queues records to be sent again on the next run, whether or not they previously succeeded.
+
+```sql
+CALL OMNATA_SYNC_ENGINE.API.MARK_RECORDS_FOR_RESYNC(
+    '<sync_slug>',                                 -- SYNC_SLUG
+    'main',                                        -- BRANCH_NAME
+    NULL,                                          -- SYNC_ACTION — optional, e.g. 'Create'; must be valid for the sync's strategy
+    ARRAY_CONSTRUCT('<record_id>', '<record_id>')  -- RECORD_IDS — values of the source table's ID column
+);
+```
+
+### Skip Records
+
+```sql
+CALL OMNATA_SYNC_ENGINE.API.MARK_RECORDS_FOR_SKIP(
+    '<sync_slug>', 'main',
+    'SKIPPED_ONCE',                    -- or 'SKIPPED_ALWAYS'
+    ARRAY_CONSTRUCT('<record_id>')
+);
+```
+
+### Bulk: by criteria
+
+`MARK_MATCHING_RECORDS_FOR_RESYNC(sync_slug, branch_name, sync_action, criteria)`, `MARK_MATCHING_RECORDS_FOR_SKIP(sync_slug, branch_name, apply_state, criteria)` and `MARK_MATCHING_RECORDS_AS_SUCCESSFUL(sync_slug, branch_name, criteria)` act on every record that matches `criteria`, an OBJECT with any of:
+- `apply_statuses`: array of `APPLY_STATE` values, e.g. `['DESTINATION_FAILURE']`
+- `record_states`: array of record states
+- `sync_actions`: array of sync actions
+- `search_terms`: array of strings matched against the transformed record
+
+```sql
+-- Example: resync every record that failed at the destination
+CALL OMNATA_SYNC_ENGINE.API.MARK_MATCHING_RECORDS_FOR_RESYNC(
+    '<sync_slug>', 'main', NULL,
+    OBJECT_CONSTRUCT('apply_statuses', ARRAY_CONSTRUCT('DESTINATION_FAILURE'))
+);
+```
+
+Before a bulk call, count the matching records in `DATA_VIEWS.OUTBOUND_SYNC_RECORD_STATE` and confirm with the user. `MARK_MATCHING_RECORDS_AS_SUCCESSFUL` stops Omnata retrying those records; use it only when the user is sure they're already correct in the destination.
 
 ---
 
@@ -254,29 +375,31 @@ Step 1), or that all syncs have already been deleted or reassigned.
 
 ### Set Connection Environment
 
-Changes a connection's production/sandbox flags without going through the full UI edit flow.
+Changes whether a connection is production or non-production, without an edit session. See `references/branching.md` for what the flag controls.
 
 ```sql
 -- ⚠️ UNDOCUMENTED.
--- Args: CONNECTION_ID (NUMBER), IS_PRODUCTION (BOOLEAN), IS_SANDBOX (BOOLEAN)
-CALL OMNATA_SYNC_ENGINE.API.SET_CONNECTION_ENVIRONMENT(<connection_id>, <is_production>, <is_sandbox>);
+CALL OMNATA_SYNC_ENGINE.API.SET_CONNECTION_ENVIRONMENT(<connection_id>, <is_production_environment>);
 ```
 
 ---
 
 ### Reassign a Sync to a Different Connection
 
-Moves a sync (or a specific branch) from one connection to another. Useful when migrating syncs
-during a connection consolidation or credential handover.
+Moves a sync's main, or one branch, to another connection of the **same plugin**. Useful when consolidating connections or handing over credentials.
 
 ```sql
 -- ⚠️ UNDOCUMENTED.
--- Args appear to be: SYNC_ID (FLOAT), CONNECTION_ID (FLOAT), BRANCH_ID (FLOAT)
-CALL OMNATA_SYNC_ENGINE.API.SET_SYNC_CONNECTION(<sync_id>, <connection_id>, <branch_id>);
+CALL OMNATA_SYNC_ENGINE.API.SET_SYNC_CONNECTION(
+    <sync_id>,          -- SYNC_ID
+    <connection_id>,    -- CONNECTION_ID
+    NULL                -- SYNC_BRANCH_ID — NULL for main, or the branch's ID from DATA_VIEWS.SYNC_BRANCH
+);
 ```
 
-> Get `BRANCH_ID` from `DATA_VIEWS.SYNC_BRANCH` if the table exists, or use `0` for the
-> main branch. Verify with Omnata support before running against production syncs.
+- The connection must be for the same plugin as the sync.
+- For main, a branched sync can't be moved to a non-production connection.
+- Confirm with the user before reassigning a production sync.
 
 ---
 
@@ -303,7 +426,8 @@ CALL OMNATA_SYNC_ENGINE.API.SET_DEFAULT_INBOUND_STORAGE_LOCATION(
 
 > **Note:** Changing the default applies to **new** syncs created in the UI. Existing syncs keep
 > their stored location. `CONFIGURE_OMNATA_INBOUND_SYNC` does not read the default, so pass it
-> explicitly as `INBOUND_STORAGE_LOCATION`. To move an existing sync's data, contact Omnata support.
+> explicitly as `INBOUND_STORAGE_LOCATION`. To move an existing sync's tables, use
+> `SET_INBOUND_SYNC_LOCATION` (see "Move an Inbound Sync's Tables").
 
 ---
 
@@ -319,59 +443,55 @@ CALL OMNATA_SYNC_ENGINE.API.SET_APP_SETTING('<setting_name>', <value_object>);
 
 ---
 
-## Pre/Post Hooks
+## Pre/Post Run Hooks
 
-Hooks allow you to run custom SQL before or after each sync run. They are configured per-sync
-through the Omnata UI (sync settings → Advanced) and run as part of the sync pipeline, not
-as a separate Snowflake task.
+Hooks run your own stored procedure at the start or end of every sync run. They aren't configured in the Omnata UI: you create a procedure with a reserved name, and the Sync Engine finds and calls it.
 
-### Hook types
+### How they work
 
-| Hook type | When it runs | Typical use |
+| Hook | Procedure name | When it runs |
 |---|---|---|
-| **Pre-run hook** | Before the sync run starts | Prepare staging tables, snapshot source views, set session parameters |
-| **Post-run hook** | After the sync run completes (regardless of success or failure) | Trigger downstream transforms, refresh materialized views, send notifications, log run metadata |
+| Pre-run | `SYNC_RUN_PRE_HOOK` | At the start of each sync run |
+| Post-run | `SYNC_RUN_POST_HOOK` | At the end of each sync run, whatever its outcome |
 
-### How hooks are defined
+- **Discovery:** the engine looks for procedures with these names **anywhere in the account** that take a single `OBJECT` argument. Every one it can see is called.
+- **They run for every sync and branch.** To act on particular syncs only, check `sync_slug` (or `branch_id`) in the payload and return early otherwise.
+- **Requirements:** the procedure must be `EXECUTE AS OWNER`, and the app needs `USAGE` on the procedure, its database and its schema.
+- **Failures don't affect the sync.** If a hook errors, the engine logs it and carries on; the run's health and `GLOBAL_ERROR` aren't changed. To find hook errors, check the event table (`references/event-table-diagnostics.md`), or log inside the hook.
 
-Hooks are configured in the Omnata UI as a SQL statement or a `CALL` to a stored procedure
-in your Snowflake account. The hook runs with the privileges of the Omnata application's
-execution context.
+### Payload
 
-```sql
--- Example pre-run hook: truncate a staging table before inbound sync
-TRUNCATE TABLE MY_DATABASE.STAGING.SALESFORCE_CONTACTS_STAGE;
-```
+Both hooks receive `sync_run_id`, `sync_id`, `sync_slug` and `branch_id` (null for main), plus `sync`, `connection` and `branch` objects with the columns of the matching `DATA_VIEWS` views.
+- **Pre-run** also gets `previous_sync_run_id` and `previous_health_state` (null on the first run).
+- **Post-run** also gets `new_health_state` and, for inbound syncs, `streams_with_refreshed_schemas`.
 
-```sql
--- Example post-run hook: call a transformation procedure after inbound sync completes
-CALL MY_DATABASE.TRANSFORMS.REFRESH_CONTACT_DIM();
-```
-
-### Viewing hook configuration
-
-Hook SQL is stored as sync metadata. To retrieve the current hook configuration for a sync:
+### Example
 
 ```sql
-SELECT
-    SYNC_ID,
-    SYNC_NAME,
-    SYNC_DIRECTION,
-    SYNC_CONFIGURATION:pre_run_hook::VARCHAR  AS PRE_RUN_HOOK_SQL,
-    SYNC_CONFIGURATION:post_run_hook::VARCHAR AS POST_RUN_HOOK_SQL
-FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC
-WHERE SYNC_ID = <sync_id>;
+CREATE TABLE MY_DB.OPS.SYNC_HOOK_LOG (PAYLOAD OBJECT, LOGGED_AT TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP());
+
+CREATE OR REPLACE PROCEDURE MY_DB.OPS.SYNC_RUN_POST_HOOK(RESULT OBJECT)
+RETURNS VARCHAR
+LANGUAGE SQL
+EXECUTE AS OWNER
+AS
+BEGIN
+  IF (:RESULT:sync_slug::VARCHAR <> 'contacts-to-salesforce') THEN
+    RETURN 'skipped';
+  END IF;
+  INSERT INTO MY_DB.OPS.SYNC_HOOK_LOG (PAYLOAD) SELECT :RESULT;
+  -- e.g. CALL MY_DB.TRANSFORMS.REFRESH_CONTACT_DIM();
+  RETURN 'logged';
+END;
+
+GRANT USAGE ON DATABASE MY_DB TO APPLICATION OMNATA_SYNC_ENGINE;
+GRANT USAGE ON SCHEMA MY_DB.OPS TO APPLICATION OMNATA_SYNC_ENGINE;
+GRANT USAGE ON PROCEDURE MY_DB.OPS.SYNC_RUN_POST_HOOK(OBJECT) TO APPLICATION OMNATA_SYNC_ENGINE;
 ```
 
-> **Note:** If `SYNC_CONFIGURATION` does not expose hook SQL in your Omnata version, hook
-> configuration is only visible through the Omnata UI (sync settings → Advanced).
+The procedure runs as its owner, so that role needs the privileges for whatever the hook does (e.g. `INSERT` on the log table).
 
-### Hook failure behaviour
-
-If a pre-run hook fails, the sync run is aborted and the failure is recorded in
-`SYNC_RUN.GLOBAL_ERROR` with a message indicating the hook SQL that failed. If a post-run
-hook fails, the sync run is marked as complete but the hook failure is logged. Check
-`GLOBAL_ERROR` in `DATA_VIEWS.SYNC_RUN` for hook-related errors.
+To see which hooks exist: `SHOW USER PROCEDURES LIKE 'SYNC_RUN_%_HOOK' IN ACCOUNT;`
 
 ---
 
@@ -379,18 +499,32 @@ hook fails, the sync run is marked as complete but the hook failure is logged. C
 
 | Procedure | Parameters | Notes |
 |---|---|---|
-| `RUN_SYNC` | `(SYNC_ID, SYNC_SLUG, BRANCH_NAME, SOURCE_NAME, SOURCE_METADATA, WAIT)` | Trigger a run |
-| `PAUSE_SYNC` | `(SYNC_ID, SYNC_SLUG)` | Suspend schedule |
-| `RESUME_SYNC` | `(SYNC_ID, SYNC_SLUG)` | Re-enable schedule |
+| `RUN_SYNC` | `(SYNC_ID, SYNC_SLUG, BRANCH_NAME, RUN_SOURCE_NAME, RUN_SOURCE_METADATA, WAIT_FOR_COMPLETION, RAISE_ERRORS, CURRENT_USER)` | Trigger a run |
+| `PAUSE_SYNC` | `(SYNC_SLUG, BRANCH_NAME)` | Pause a sync or branch |
+| `RESUME_SYNC` | `(SYNC_SLUG, BRANCH_NAME)` | Resume a sync or branch |
+| `SET_SYNC_NAME` | `(SYNC_SLUG, SYNC_NAME)` | Rename |
+| `SET_SYNC_SCHEDULE` | `(SYNC_SLUG, MULTI_ACCOUNT, SYNC_SCHEDULE, BRANCH_NAME)` | Change schedule |
+| `SET_SYNC_OWNER` | `(SYNC_SLUG, BRANCH_NAME, OWNER)` | Restrict configure/run to one user |
+| `SET_SYNC_SLUG` | `(SYNC_ID, SYNC_SLUG)` | Change slug. Caution: external references |
 | `DELETE_SYNC` | `(SYNC_SLUG, SYNC_ID)` | Delete a sync, its raw tables and normalized views. Irreversible. |
-| `CONFIGURE_OMNATA_OUTBOUND_SYNC` | 21 positional params — see `references/configure-syncs.md` | Create or update an outbound sync. Idempotent. |
-| `CONFIGURE_OMNATA_INBOUND_SYNC` | 28 params (8 required) — see `references/configure-syncs.md` | Create or update an inbound sync with bulk stream setup. Idempotent. |
+| `DELETE_SYNC_BRANCH`, `SYNC_CONFIGURATION_ROLLBACK` | see `references/branching.md` | Delete a branch; copy or roll back configuration |
+| `CONFIGURE_OMNATA_OUTBOUND_SYNC` | 21 params — see `references/configure-syncs.md` | Create or update an outbound sync. Idempotent. |
+| `CONFIGURE_OMNATA_INBOUND_SYNC` | 28 params (8 required) — see `references/configure-syncs.md` | Create or update an inbound sync. Idempotent. |
 | `REFRESH_INBOUND_STREAM_SCHEMAS` | `(SYNC_SLUG, BRANCH_NAME, STREAM_NAMES)` | Pull latest schemas from source app. Min v3.60. |
 | `RECREATE_INBOUND_NORMALIZED_VIEWS` | `(SYNC_SLUG, BRANCH_NAME, STREAM_NAMES, IGNORE_ERRORS)` | Rebuild normalized views. Min v3.17. |
-| `GET_INBOUND_ALL_STREAMS_VIEW_DEFINITIONS` | `(SYNC_SLUG, BRANCH_NAME)` | Return CREATE VIEW SQL for all streams |
+| `GET_INBOUND_ALL_STREAMS_VIEW_DEFINITIONS` | `(SYNC_SLUG, BRANCH_NAME)` | Returns an OBJECT of CREATE VIEW SQL. Use `CALL` |
+| `MARK_STREAMS_FOR_FULL_REFRESH` / `UNMARK_STREAMS_FOR_FULL_REFRESH` | `(SYNC_ID, BRANCH_NAME, STREAMS, TRUNCATE)` / `(SYNC_ID, BRANCH_NAME, STREAMS)` | Full refresh on the next run |
+| `SET_FULL_REFRESH_SCHEDULE` | `(SYNC_SLUG, BRANCH_NAME, FULL_REFRESH_SCHEDULE)` | Recurring full refresh |
+| `SET_INBOUND_SYNC_LOCATION` | `(SYNC_ID, SYNC_SLUG, INBOUND_STORAGE_LOCATION, MULTI_ACCOUNT_KEY)` | Move an existing sync's tables and views |
+| `CLEANUP_INBOUND_OBJECTS` | `(OBJECT_TYPE, LIST_ONLY)` | List or drop orphaned inbound objects |
+| `SET_INBOUND_SYNC_STATE` | `(SYNC_SLUG, STREAM_NAME, STREAM_STATE)` or `(SYNC_SLUG, STREAMS_STATE)` | Support use only |
+| `MARK_RECORDS_FOR_RESYNC` | `(SYNC_SLUG, BRANCH_NAME, SYNC_ACTION, RECORD_IDS)` | Outbound only |
+| `MARK_RECORDS_FOR_SKIP` | `(SYNC_SLUG, BRANCH_NAME, APPLY_STATE, RECORD_IDS)` | `SKIPPED_ONCE` or `SKIPPED_ALWAYS` |
+| `MARK_MATCHING_RECORDS_FOR_RESYNC` / `_FOR_SKIP` / `_AS_SUCCESSFUL` | `(SYNC_SLUG, BRANCH_NAME, [SYNC_ACTION or APPLY_STATE,] CRITERIA)` | Bulk, by criteria |
 | `DELETE_CONNECTION` | `(CONNECTION_ID)` | ⚠️ Undocumented. Irreversible. |
 | `BEGIN_CONNECTION_CREATION`, `BEGIN_CONNECTION_EDIT`, `UPDATE_CONNECTION_OBJECTS`, `COMPLETE_CONNECTION_CREATION`, `CANCEL_CONNECTION_CREATION` | see `references/configure-connections.md` | Create or edit a connection |
-| `SET_CONNECTION_ENVIRONMENT` | `(CONNECTION_ID, IS_PRODUCTION, IS_SANDBOX)` | ⚠️ Undocumented. |
-| `SET_SYNC_CONNECTION` | `(SYNC_ID, CONNECTION_ID, BRANCH_ID)` | ⚠️ Undocumented. Reassign sync to different connection. |
-| `SET_DEFAULT_INBOUND_STORAGE_LOCATION` | `(OBJECT)` | Set the default inbound storage location. See `references/data-management.md` |
-| `SET_APP_SETTING` | `(SETTING_NAME, VALUE)` | ⚠️ Undocumented. Use only on Omnata support instruction. |
+| `SET_CONNECTION_ENVIRONMENT` | `(CONNECTION_ID, IS_PRODUCTION_ENVIRONMENT)` | ⚠️ Undocumented. |
+| `SET_SYNC_CONNECTION` | `(SYNC_ID, CONNECTION_ID, SYNC_BRANCH_ID)` | ⚠️ Undocumented. `SYNC_BRANCH_ID` NULL for main |
+| `SET_DEFAULT_INBOUND_STORAGE_LOCATION` | `(OBJECT)` | Default for new syncs. See `references/data-management.md` |
+| `SET_APP_SETTING` | `(SETTING_NAME, SETTING_VALUE)` | ⚠️ Undocumented. Use only on Omnata support instruction. |
+| `DELETE_ALL_SYNCS` / `DELETE_ALL_CONNECTIONS` | `(PLUGIN_FQN)` | Deletes everything for a plugin. Irreversible; confirm explicitly |
