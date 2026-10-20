@@ -55,3 +55,4 @@ than a transient platform outage.
 - JSON columns (`SYNC_SCHEDULE`, `LAST_RESULT`, `OUTBOUND_APPLY_STATE_COUNTS`) are accessed with Snowflake's `:` operator, e.g. `OUTBOUND_APPLY_STATE_COUNTS:SUCCESS::INTEGER`
 - `PLUGIN_FQN` format: `PUBLISHER__APP_NAME`, e.g. `OMNATA__SALESFORCE`, `OMNATA_LABS__PAYPAL_BRAINTREE`
 - Every sync has an implied `'main'` branch; branches only exist when `CONFIGURATION_MODE = 'advanced'`
+- Most `API` procedures return an OBJECT. If a result shows `[object Object]`, read it with `SELECT TO_JSON($1) FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))` straight after the call, before running anything else

@@ -154,7 +154,7 @@ Check the result against the layout checklist (the guided questions below). Ask 
 - **Which database, exactly.** "Omnata" could mean a new `OMNATA` database or the app database `OMNATA_SYNC_ENGINE`. The app database only allows `INBOUND_RAW` and `INBOUND_NORMALIZED`, so any custom schema split needs a separate database
 - **Where the raw tables go.** Users rarely mention them. Suggest a separate raw schema, and keep `{{sync_slug}}` in `raw_object`
 - **Table name case.** Users often say "uppercase" for columns but not tables. Without `| upper`, every table is a case-sensitive quoted name
-- **Cleaning stream names.** Look at the actual stream names. Spaces, dashes, dots and file extensions (`Flights.xlsx`, `Feedback form - Answers`) end up in the table name. Offer to clean them, for example `{{ stream_name | replace(".xlsx", "") | replace(" ", "_") | replace("-", "_") | transliterate | fivetran_word_division | multiple_underscores_to_single | upper }}`, which turns `Feedback form - Answers` into `FEEDBACK_FORM_ANSWERS`. `fivetran_word_division` doesn't replace spaces or dashes itself, so keep the `replace` steps
+- **Cleaning stream names.** Only raise this if the actual stream names are messy (spaces, dashes, dots or file extensions such as `Flights.xlsx` or `Feedback form - Answers`). Suggest the fewest steps that fix the names you see, for example `{{ stream_name | replace(" ", "_") | replace("-", "_") | upper }}`, and keep the template simple. Don't offer a long filter chain by default
 - **Branches.** Check whether branching is on for the sync (see `references/branching.md`). If it's on, flag that branches will clash without `{{branch_name}}` and recommend the fix. If it's off, flag it once and move on
 - **More than one sync per plugin or source.** Ask whether the user has, or expects, several syncs from the same plugin (several accounts, environments or test syncs). Layouts keyed only on plugin and stream, such as "schema per plugin, table = stream", only stay unique with one sync per plugin. Raise this before the preview rather than letting the preview find it
 
@@ -406,6 +406,14 @@ GRANT OWNERSHIP ON FUTURE VIEWS IN SCHEMA <DB>.<SCHEMA> TO DATABASE ROLE <DB>.OM
 - A schema holding both tables and views (raw and normalized side by side) gets both future grants
 - Use the exact case from the preview. If a schema name isn't all uppercase, quote it
 
+##### Reuse an existing role
+Before generating anything, check whether the database already has the role and whether it's granted to the app:
+```sql
+SHOW DATABASE ROLES IN DATABASE <DB>;
+SHOW GRANTS OF DATABASE ROLE <DB>.OMNATA_ROLE;   -- look for APPLICATION OMNATA_SYNC_ENGINE
+```
+If it exists and is granted to the app, skip the per-database statements and only generate the per-schema ones.
+
 ##### Existing databases and schemas
 If a schema already exists (for example when landing in a database like `DEMO_DATA`), check it before generating anything:
 ```sql
@@ -417,6 +425,7 @@ SHOW FUTURE GRANTS IN SCHEMA <DB>.<SCHEMA>;
 - Leftover Omnata tables or views owned by another role won't be manageable by the app. Have the user drop them, or transfer their ownership to the database role
 
 ##### Running it
+- Run the statements one at a time, in the order shown: transfer schema ownership first, then add the future ownership grants. Snowflake rejects an ownership transfer while ownership future grants exist in the schema. If it fails for that reason, revoke the future grants, transfer ownership, then grant them again
 - Show the full script and confirm with `ask_user_question` before running. It transfers ownership and grants privileges to the app
 - If the user's current role can create databases (or owns the target database) and can grant to the application, CoCo can run it. Otherwise hand the script to their Snowflake admin and wait until it's done
 - Verify afterwards:
@@ -430,8 +439,20 @@ Because the app can't create schemas under this setup, a template that renders n
 - **Fork B:** CoCo does this at B4 for every sync, using that sync's preview
 - **Fork A:** the default applies to syncs created later, often in the UI, where nobody runs the setup first. Tell the user this when they choose a variable schema name, and suggest fixed schema names (for example `RAW` and `NORMALIZED`, with variables only in table names) unless they're happy to pre-create schemas for each new plugin or sync
 
+##### What the app grants itself
+The app grants `SELECT` to its `OMNATA_ADMINISTRATOR` app role on every object it creates. It recreates views with `copy grants`, so grants made on a view survive recreates.
+
 ##### Giving people read access
-The docs don't cover this. A suggested approach, offered only if the user asks: because the schemas are managed access, grants are made by the schema owner, so the user grants `OMNATA_ROLE` to an admin role and makes the grants from there, or creates a separate reader database role with `USAGE` on the database and schemas and `SELECT` on future views, granted to the roles that query the data.
+Offer this if the user asks who can query the data. Readers only need the normalized views:
+```sql
+GRANT USAGE ON DATABASE <DB> TO ROLE <READER_ROLE>;
+GRANT USAGE ON SCHEMA <DB>.<NORMALIZED_SCHEMA> TO ROLE <READER_ROLE>;
+GRANT SELECT ON ALL VIEWS IN SCHEMA <DB>.<NORMALIZED_SCHEMA> TO ROLE <READER_ROLE>;
+GRANT SELECT ON FUTURE VIEWS IN SCHEMA <DB>.<NORMALIZED_SCHEMA> TO ROLE <READER_ROLE>;
+```
+- The schemas are managed access, so these grants must come from the schema owner (a role that has `OMNATA_ROLE`) or a role with `MANAGE GRANTS`
+- No grants are needed on the raw schema
+- To test as the reader, run `USE ROLE <READER_ROLE>; USE SECONDARY ROLES NONE;` first. Otherwise secondary roles (`ALL` by default) can make the test pass when it shouldn't
 
 ### Fork A: Develop a naming system with the custom default template
 
@@ -493,6 +514,12 @@ Run the preview loop with:
 First create the location and privileges for this sync's `schemas_needed` (see "Creating the location and privileges"). Skip any schema that already exists with the right setup.
 
 Then pass the accepted object as `INBOUND_STORAGE_LOCATION` when calling `CONFIGURE_OMNATA_INBOUND_SYNC` (`references/configure-syncs.md`). When configuring many syncs in one go, preview them all together before creating any.
+
+**Changing an existing sync's location** (re-send its full configuration, or use `SET_INBOUND_SYNC_LOCATION` in `references/actions.md`):
+- It takes effect at the next run. Until then the stored location (`INBOUND_STORAGE_CONFIGURATION`) changes, but the applied location (`INBOUND_STORAGE_LOCATION_APPLIED`) doesn't
+- That run moves the existing tables and views (it doesn't copy them) and deletes the old ones. Open branches move too
+- Suggest one run straight away to confirm the move
+- Tables from streams the sync no longer uses stay in the old location. Look for them afterwards and offer to drop them
 
 For the next sync, start at B1 again. The convention now includes this sync.
 

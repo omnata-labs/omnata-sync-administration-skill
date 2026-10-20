@@ -272,7 +272,9 @@ CALL OMNATA_SYNC_ENGINE.API.SET_INBOUND_SYNC_LOCATION(
 );
 ```
 
-Design and preview the location first with `references/data-management.md`. Grants on the moved views may need re-applying.
+Design and preview the location first with `references/data-management.md`.
+
+The move happens at the **next run**, not when you call this. That run moves the tables and views (it doesn't copy them), deletes the old ones, and moves open branches too. Suggest one run straight away to confirm it. Tables from streams the sync no longer uses stay behind; offer to drop them.
 
 ---
 
