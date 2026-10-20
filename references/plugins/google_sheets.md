@@ -128,6 +128,8 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 - Sheets must be table-shaped (header row, no merged cells, no blank rows or columns in the data range). If not, the run fails with an error like `1 columns passed, passed data had 2 columns`, meaning the header row has fewer named columns than the data. Fixes: set `header_row` to the real header row, name every column, or unmerge header cells. It can take more than one pass: each run reports the next mismatch. Ctrl/Cmd+End in the sheet jumps to the last used cell, which finds stray values in unnamed columns. After fixing headers, refresh the schema with `REFRESH_INBOUND_STREAM_SCHEMAS` before rerunning.
 - The stream list depends on `sync_mode` and the file parameters, so set those before choosing streams.
+- **Columns are detected from the first data row, not the header.** Empty cells at the end of that row are dropped, so a new column that's sparsely filled never reaches the schema or the normalized view. Have the user fill in row 2 (the first data row) for every column, then run `REFRESH_INBOUND_STREAM_SCHEMAS` and `RECREATE_INBOUND_NORMALIZED_VIEWS`.
+- **`Primary key field '<x>' was not present in all records`:** the key column isn't on that sheet. Update both `primary_key_columns` and `STREAM_PRIMARY_KEYS` to a column that is. Watch for keys copied over from another sheet's sync.
 
 ## Sources
 

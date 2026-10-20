@@ -537,6 +537,22 @@ When `RAISE_ERRORS` is false (default) and an error occurs:
 - **PK override**: The plugin's source-defined PK takes precedence over what you pass in `stream_primary_keys`
 - **Cursor fallback**: If a stream is set to Incremental but has no cursor field (and none is provided), the strategy is automatically downgraded to Full Refresh
 
+### Updating an existing sync
+
+No procedure changes only one part of an inbound sync (for example just its storage location), so re-send the **full** configuration. Leaving out a stream removes it.
+
+1. Read the current configuration first:
+   ```sql
+   SELECT SYNC_PARAMETERS, SYNC_SCHEDULE, INBOUND_STREAMS_CONFIGURATION,
+          INBOUND_STORAGE_CONFIGURATION, BRANCHING_MODE_ENABLED
+   FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC WHERE SYNC_SLUG = '<sync_slug>';
+   ```
+2. Pass the parameters, every stream, its primary keys and the schedule back unchanged, and change only what the user asked for.
+3. **If branching is on**, key `CONNECTION_SLUG` and `SYNC_SCHEDULE` by branch, e.g. `OBJECT_CONSTRUCT('main', <value>)`, and set `SINGLE_ACCOUNT_BRANCHING => true` and `SINGLE_ACCOUNT_BRANCH_TO_CONFIGURE => 'main'`. This updates main and leaves existing branches untouched. See `references/branching.md`.
+4. A storage location change applies at the next run. See "Changing an existing sync's location" in `references/data-management.md`.
+
+**Quoting Jinja in SQL:** single quotes inside a template passed in a SQL string must be doubled, e.g. `'{{ stream_name | replace(''-'', ''_'') }}'`.
+
 ## Running and verifying a sync
 
 After creating the sync, trigger a run:

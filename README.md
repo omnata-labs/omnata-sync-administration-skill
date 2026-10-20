@@ -8,8 +8,10 @@ A Cortex Code skill for administering [Omnata Sync Engine](https://omnata.com) �
 - **Outbound syncs** — run history, failed records, error patterns, stuck and delayed records
 - **Inbound syncs** — data freshness, stream failures, cursor state, stream audit trail, normalized view repair
 - **Connections** — create connections end to end with CoCo (API key, token, service account and OAuth), health assessment, lifecycle history, credential change detection, advanced connection management
-- **Actions** — run, pause, resume and delete syncs, clean up test syncs and connections, refresh schemas, recreate views, pre/post hook reference, full stored procedure interface
+- **Actions** — run, pause, resume, rename, reschedule and delete syncs, resync or skip outbound records, full refresh of inbound streams, move inbound tables, clean up test syncs, connections and orphaned objects, refresh schemas, recreate views, pre/post run hooks, full stored procedure interface
 - **Sync configuration** — create and update inbound and outbound syncs programmatically via `CONFIGURE_OMNATA_INBOUND_SYNC` / `CONFIGURE_OMNATA_OUTBOUND_SYNC`, bulk stream setup, per-plugin reference pages
+- **Branching and environments** — production vs non-production connections, test-first or straight-to-production guidance, dev/test branches, copying configuration between branches
+- **Data management** — where inbound tables and views land: default storage location templates, per-sync locations, previews and collision checks before creating syncs
 - **Error diagnosis** — origin classification (Snowflake-side / endpoint-side / platform-level), remediation actions, error knowledge base
 - **Event table diagnostics** — full stack traces, sync run lifecycle timelines, recurring error detection
 - **Warehouse costs** — credit attribution per sync, dollar estimates, schedule optimisation recommendations
