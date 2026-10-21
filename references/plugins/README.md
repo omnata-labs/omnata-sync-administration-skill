@@ -23,14 +23,14 @@ Outbound rule: outbound syncs can only be created from the definition of an exis
 | `dynamics_365_business_central.md` | Microsoft Dynamics 365 Business Central | Yes | None |
 | `dynamics_365_synapse_link.md` | Microsoft Dynamics 365 Synapse Link | Yes | None |
 | `entra_id.md` | Microsoft Entra ID | Yes | None |
-| `github.md` | Github | Yes | None |
+| `github.md` | GitHub | Yes | None |
 | `google_ads.md` | Google Ads | Yes | Declared (Create, Upsert) but not implemented |
 | `google_sheets.md` | Google Sheets | Yes | Replace |
 | `hubspot.md` | Hubspot | Yes | Create, Upsert, Update, Delete |
 | `infor_datalake.md` | Infor Datalake | Yes | None |
 | `jira.md` | Jira | Yes | Create, Upsert |
 | `linkedin_ads.md` | LinkedIn Ads | Yes | None (conversion events commented out) |
-| `mailgun.md` | Mailgun | Yes | None |
+| `mailgun.md` | Mailgun | Yes | Send |
 | `marketo.md` | Marketo | No | Upsert, Update, Create |
 | `meta_marketing.md` | Meta Marketing | Yes | None |
 | `microsoft_ads.md` | Microsoft Ads (repo `plugin-bing-ads`) | Yes | None |
