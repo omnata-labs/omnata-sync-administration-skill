@@ -99,6 +99,63 @@ ORDER BY S.SYNC_NAME
 
 If no syncs are in `FAILED` or `INCOMPLETE` state, skip this step and report all syncs are healthy or pending.
 
+### Step 2b: Check Warehouse Capacity During the Run
+
+**Goal:** Before digging into the error text, rule out an overloaded warehouse. Do this for every failed, incomplete, slow or timed-out run from Step 2. An over-capacity warehouse makes sync queries queue, so runs slow down, hit `time_limit_mins` and fail with errors that look unrelated (timeouts, incomplete streams, expired tokens).
+
+**1. Find the warehouse and run window.** The warehouse is in the sync's schedule:
+
+```sql
+SELECT S.SYNC_SLUG, S.SYNC_SCHEDULE:warehouse::VARCHAR AS WAREHOUSE,
+       S.SYNC_SCHEDULE:time_limit_mins::INTEGER AS TIME_LIMIT_MINS,
+       R.SYNC_RUN_ID, R.RUN_START_DATETIME, R.RUN_END_DATETIME,
+       DATEDIFF('minute', R.RUN_START_DATETIME, R.RUN_END_DATETIME) AS DURATION_MINS
+FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC_RUN R
+JOIN OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC S ON R.SYNC_ID = S.SYNC_ID
+WHERE R.SYNC_RUN_ID = <sync_run_id>;
+```
+
+For a branch, take the warehouse from `DATA_VIEWS.SYNC_BRANCH.SYNC_SCHEDULE`. If the run has no end time, use the current time.
+
+**2. Check queuing on that warehouse during the run.** Omnata's query tag carries no sync ID, so measure the warehouse over the run's time window. These `INFORMATION_SCHEMA` functions have no lag but only cover recent history (load: 14 days; queries: 7 days). For older runs, use the `SNOWFLAKE.ACCOUNT_USAGE` views of the same name.
+
+```sql
+-- Queries on the warehouse during the run
+SELECT COUNT(*) AS QUERIES,
+       ANY_VALUE(WAREHOUSE_SIZE) AS WAREHOUSE_SIZE,
+       SUM(QUEUED_OVERLOAD_TIME) / 1000 AS QUEUED_OVERLOAD_SECS,
+       MAX(QUEUED_OVERLOAD_TIME) / 1000 AS MAX_QUEUED_SECS,
+       SUM(QUEUED_PROVISIONING_TIME) / 1000 AS PROVISIONING_SECS,
+       SUM(EXECUTION_TIME) / 1000 AS EXECUTION_SECS
+FROM TABLE(SNOWFLAKE.INFORMATION_SCHEMA.QUERY_HISTORY_BY_WAREHOUSE(
+    WAREHOUSE_NAME => '<warehouse>',
+    END_TIME_RANGE_START => '<run_start>'::TIMESTAMP_LTZ,
+    END_TIME_RANGE_END => '<run_end>'::TIMESTAMP_LTZ,
+    RESULT_LIMIT => 10000));
+
+-- Warehouse load across the run
+SELECT MAX(AVG_RUNNING) AS PEAK_RUNNING, MAX(AVG_QUEUED_LOAD) AS PEAK_QUEUED,
+       AVG(AVG_QUEUED_LOAD) AS AVG_QUEUED, MAX(AVG_BLOCKED) AS PEAK_BLOCKED
+FROM TABLE(SNOWFLAKE.INFORMATION_SCHEMA.WAREHOUSE_LOAD_HISTORY(
+    DATE_RANGE_START => '<run_start>'::TIMESTAMP_LTZ,
+    DATE_RANGE_END => '<run_end>'::TIMESTAMP_LTZ,
+    WAREHOUSE_NAME => '<warehouse>'));
+```
+
+To see what else was using the warehouse, group the first query by `QUERY_TAG` (Omnata sync queries are tagged `RUN_SYNC Sync`; see `references/monitoring-warehouse-cost.md`) or by `USER_NAME`.
+
+**3. Interpret:**
+- **No overload queuing** (`QUEUED_OVERLOAD_SECS` near 0, `PEAK_QUEUED` 0): capacity isn't the cause. Carry on with the error text and `references/error-knowledge-base.md`.
+- **Overload queuing** that's a noticeable share of the run, or `PEAK_QUEUED` above 0 for much of it: the warehouse was over capacity. Say so first, then offer the fixes:
+  - Move this sync to a less busy warehouse, or give Omnata its own (`SET_SYNC_SCHEDULE`, see `references/actions.md`)
+  - Stagger the schedules of syncs that share the warehouse
+  - Make the warehouse multi-cluster, so queued queries get another cluster
+  - Increase the size only for database connectors or heavy inbound syncs. Omnata recommends XS for API-based syncs, and queuing on API syncs is usually fixed by spreading the load rather than by a bigger warehouse
+- **Duration close to `TIME_LIMIT_MINS`**: the run was likely cut off. If the warehouse was also queuing, fix capacity first. Otherwise suggest raising `time_limit_mins`.
+- **High provisioning time** only: the warehouse was resuming or adding clusters. It's usually small; flag it only if it's a large share of the run.
+
+Changing warehouses or schedules affects other workloads, so confirm with the user before changing anything.
+
 ### Step 3: Offer to Trigger a Re-Run (Optional)
 
 <!-- contributor: cortex-code — RUN_SYNC procedure integration and triage logic -->

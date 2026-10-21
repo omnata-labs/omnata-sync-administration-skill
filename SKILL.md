@@ -30,6 +30,11 @@ Identify what the user needs and read the appropriate reference file before proc
 | Deep diagnostic: stack traces, event logs, sync run lifecycle | `references/event-table-diagnostics.md` |
 | Warehouse costs, credits, dollars, sync cost attribution, pricing, optimisation | `references/monitoring-warehouse-cost.md` |
 | **Configure Syncs:** Configure an outbound sync, create a new outbound sync, create a sync to Slack/Salesforce/HubSpot, bulk-configure inbound sync streams, create sync with many streams, CONFIGURE_OMNATA_OUTBOUND_SYNC, CONFIGURE_OMNATA_INBOUND_SYNC | `references/configure-syncs.md` |
+When troubleshooting a failed, incomplete, slow or timed-out sync run, one of the first checks
+is whether the sync's warehouse was over capacity during the run. Queuing causes timeouts and
+errors that look unrelated. See "Step 2b: Check Warehouse Capacity During the Run" in
+`references/monitoring-sync-status.md`, and do it before working through the error text.
+
 After surfacing any error message — whether from a failed outbound record (`LAST_RESULT`),
 a failed inbound stream (`INBOUND_GLOBAL_ERROR_BY_STREAM`), or a sync run (`GLOBAL_ERROR`) —
 always read `references/error-knowledge-base.md`, classify the error by origin
