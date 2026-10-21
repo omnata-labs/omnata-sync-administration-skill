@@ -7,6 +7,10 @@
 | Directions | Inbound: Yes. Outbound: Declared in manifest but not implemented (see Outbound) |
 | Docs | `apps/google_ads/README.md` |
 
+## Connection
+
+Follow `configure-connections.md`. One method, `OAuth` (`authorization_code`), scope `https://www.googleapis.com/auth/adwords`, token endpoint `https://oauth2.googleapis.com/token`. Field: `developer_token` (secret, optional). It is legacy: the plugin help text says Google sunset developer tokens on September 9, 2026 and API access now comes from the GCP project owning the OAuth client. Leave it blank; a saved token is still sent if present.
+
 ## Inbound
 
 **Sync parameters** (`SYNC_PARAMETERS`):
@@ -15,7 +19,7 @@
 - `backfill_days` (optional): days of history on the first sync of a metric report. Default `365`. Capped per report where Google limits it.
 - Custom mode only: `resource` (required, the Google Ads resource to report on), `attribute_fields` (optional, comma-separated fully-qualified attribute fields such as `campaign.name`), `segments` (optional, comma-separated fully-qualified segments such as `segments.device`). `field_guidance` is a read-only information field, do not pass it.
 
-**Streams**: depend on `reporting_mode`. Standard mode returns a static catalog defined in `standard_reporting.py`, for example `campaign_performance`, `ad_group_performance`, `conversion_actions`, `labels`, `campaign_budgets`. Custom mode returns a single stream named `{resource}_report_daily`, built dynamically from `resource`, `attribute_fields` and `segments` (requires API calls to Google's field metadata). All streams have source-defined primary keys. Metric reports have a source-defined cursor (`segments.date`). Entity reports have no cursor.
+**Streams**: depend on `reporting_mode`. Standard mode returns a static catalog defined in `standard_reporting.py`, for example `campaign_performance`, `ad_group_performance`, `conversion_actions`, `labels`, `campaign_budgets`. Custom mode returns a single stream named `{resource}_report_daily`, built dynamically from `resource`, `attribute_fields` and `segments` (requires API calls to Google's field metadata). All streams have source-defined primary keys. Metric reports have a source-defined cursor (`segments.date`). Entity reports have no cursor. For reports with a Google lookback limit, a saved cursor older than that limit (for example 90 days for `click_performance`) is clamped forward to it, so data older than the limit is not re-requested after a long pause.
 
 **Sync strategies supported**: metric reports support `Incremental` and `Full Refresh`. Entity reports are `Full Refresh` only.
 
@@ -43,12 +47,12 @@ The manifest lists `Create` and `Upsert`, but `outbound_configuration_form` and 
 ## Notes
 
 - One customer per sync. Create one sync per customer on the same connection.
-- `click_view` is fetched one day at a time due to a Google Ads API constraint, so large backfills on it are slow.
+- `click_performance` (resource `click_view`) is fetched one day at a time due to a Google Ads API constraint, so large backfills on it are slow.
 - In custom mode, set `resource`, `attribute_fields` and `segments` before listing streams, because the stream name and schema are derived from them. Incompatible segments fail at configuration time.
 
 ## Sources
 
-- Code: `omnata-labs/plugin-google-ads` at `src/plugin.py`, `src/standard_reporting.py`
+- Code: `omnata-labs/plugin-google-ads` branch `main` (latest commit 2026-10-08) at `src/plugin.py`, `src/standard_reporting.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/google_ads/README.md`
 - Docs describe a "Campaign Report Grouping" multi-select parameter for Standard mode. No such field exists in `inbound_configuration_form`, so it is omitted here. Its parameter name could not be verified.
 - Docs say 28 standard reports. Exact count not re-verified against code.

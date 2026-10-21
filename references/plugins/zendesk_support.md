@@ -49,9 +49,10 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 - API rate limits depend on the Zendesk plan; see docs before raising concurrency.
 - Only `ConnectivityOption.DIRECT` is supported.
+- Connection method: "OAuth (User Created)" (authorization code; fields `subdomain`, `product_plan` (`free`, `team`, `professional`, `enterprise`; used for rate-limit quota), optional `high_volume_api_addon`). OAuth template endpoints are `https://<Zendesk subdomain>.zendesk.com/oauth/authorizations/new` and `https://<Zendesk subdomain>.zendesk.com/oauth/tokens`, scopes `read`, `write`.
 
 ## Sources
 
-- Code: `omnata-labs/plugin-zendesk-support` at `src/plugin.py`
+- Code: `omnata-labs/plugin-zendesk-support` (`main`, 2026-10-15) at `src/plugin.py` (incl. `connection_form`)
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/zendesk_support/README.md`
 - Not verified: `zendesk_object` and `update_field` have no explicit `required=` flag. `max_concurrent_queries_per_stream` is not referenced elsewhere in `plugin.py` by name, so its effect could not be confirmed. Cursor fields are not declared, so incremental streams may need `STREAM_CURSOR_FIELDS` or rely on plugin-internal state; not verified.
