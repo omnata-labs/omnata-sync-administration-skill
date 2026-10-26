@@ -10,7 +10,7 @@
 ## Inbound
 
 **Sync parameters** (`SYNC_PARAMETERS`):
-- `stream_type` (required): `data_extension`, `journey_history`, or `tracking_extract` (SFTP connection methods only). Changes the stream list and other fields.
+- `stream_type` (required): `data_extension`, `journey_history`, or `tracking_extract` (needs an SFTP or Cloud Storage connection method; the option is also shown on "OAuth for APIs" but runs the SFTP path there and will fail). Changes the stream list and other fields.
 - `activity_types`, `statuses` (required for `journey_history`, multi-select).
 - `data_extension_filter` (`filter` or `all`) and `data_extension_filter_text` (required when `filter`): limit listed Data Extensions.
 - `account_id` (optional, data_extension): override the connection's Account ID.
@@ -52,7 +52,8 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 ## Notes
 
 - Outbound requires an SFTP or Cloud Storage connection method; API-only connections show an error field instead.
-- Tracking extract streams are only offered on SFTP connection methods.
+- Tracking extract syncs run over SFTP or Cloud Storage connection methods (Cloud Storage uses the connection's `snowflake_stage` and `file_location_external_key`).
+- Consumer UDFs/UDTFs in the plugin's `UDFS` schema, each taking `CONNECTION_PARAMETERS` first: `FETCH_DATA_EXTENSION_FOLDERS` (UDTF: `CATEGORY_ID`, `FOLDER_PATH`), `GET_SEND_SUMMARY(SEND_ID)` (send job status and counters, available sooner than tracking extracts), `GET_JOURNEY_DEFINITION(JOURNEY_NAME)` (latest version, or null), `ENSURE_TRIGGERED_SEND(CUSTOMER_KEY, NAME, EMAIL_NAME, SENDER_PROFILE_ID, SEND_CLASSIFICATION_ID, DELIVERY_PROFILE_ID)` (creates/activates a Triggered Send Definition; send with `SEND_TRIGGERED_EMAIL`).
 
 ## Sources
 
