@@ -47,7 +47,6 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-infor-data-lake` at `src/plugin.py`, `src/metadata/database_metadata.py`, `src/metadata/database_table_categories.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/infor_data_lake/README.md`
 - `MITMAS` and `OCUSMA` appear in the plugin's static M3 table classification list. Their presence in a given tenant's catalog was not verified.
 - The exact category key format (prefix values) depends on live API data and could not be verified. `<category>` is a placeholder.

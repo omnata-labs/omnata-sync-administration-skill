@@ -56,6 +56,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-mailgun` at `src/plugin.py` (branch `main`, tag V2.3); `Send` strategy name from `omnata_plugin_runtime.configuration.SendSyncStrategy`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/mailgun/README.md` (not re-checked for outbound in this update; previously said inbound only).
 - Not verified: whether whitespace in `domains` matters (code strips each entry, so it should not).

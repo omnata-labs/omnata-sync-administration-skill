@@ -50,6 +50,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-ukgpro`, branch `main-v1` (commit `87a3a00`, 2026-10-20; only branch of main-v2/main-v1/main that exists), `src/plugin.py`: method constants and defaults (lines 59-200), `connection_form` / `network_addresses` (427-542), `inbound_configuration_form` / `inbound_tuning_parameters` / `inbound_stream_list` (2566-2822).
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/ukgpro/README.md`
 - Not verified: numeric default of `detection_window_days` (`AUDIT_MAX_RANGE_DAYS`, not traced).

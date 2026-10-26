@@ -43,6 +43,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-postgresql` at `src/plugin.py`, `src/metadata/database_metadata.py`, `src/queries/hwm_queries.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/postgresql/README.md`
 - Whether dropdown values (`database`, `schema`) must be stored as plain strings or option objects was not verified. Copy from a UI-created sync if unsure.

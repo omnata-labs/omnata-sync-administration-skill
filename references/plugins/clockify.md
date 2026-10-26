@@ -41,6 +41,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `plugin-clockify` at `src/plugin.py`, `src/plugin_api_documents.py`, `src/plugin_models.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/clockify/README.md`
 - Exact stored value format for the multi-select `workspaces` parameter (array of IDs) is assumed, not verified.

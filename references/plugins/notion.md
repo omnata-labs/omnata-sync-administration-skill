@@ -43,6 +43,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-notion` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/notion/README.md`
 - The exact value format of `what_to_sync` when stored by the UI (plain string versus option object) was not verified. Copy from a UI-created sync if unsure.

@@ -54,7 +54,6 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-xero` at `src/plugin.py`, `src/plugin_objects.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/xero/README.md`
 - Conflict: docs list Payroll and Projects ("Coming Soon"); code `fetch_api_sets` offers only `accounting` and `assets` (projects commented out, payroll absent).
 - Not verified: exact stored format for multi-select `tenants`; full stream name list.

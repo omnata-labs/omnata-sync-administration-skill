@@ -45,6 +45,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `plugin-claude` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/claude/README.md`
 - The stored value format of the multi-select `usage_report_grouping` (comma string as in the code default vs. array) was not verified; copy from a UI-created sync if unsure. Docs state `cost_report` shares the granularity setting; not separately verified in code.

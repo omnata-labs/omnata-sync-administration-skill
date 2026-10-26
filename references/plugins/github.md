@@ -43,6 +43,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-github` (`main`, 2026-10-22) at `src/plugin.py` (`get_manifest`, `connection_form`), `src/json_schemas/`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/github/README.md`
 - Docs page contains an older stream list (four streams) alongside the full ten-stream table. Code matches the ten-stream table.

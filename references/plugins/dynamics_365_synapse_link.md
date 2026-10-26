@@ -39,6 +39,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `plugin-dynamics-365-synapse-link` (`main-v1`, V3.0, 2026-10-04) at `src/plugin.py`, `src/metadata/model_metadata.py`, `src/custom_setup_script.sql` (Streamlit and reconciliation schemas)
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/dynamics_365_synapse_link/README.md`
 - Stream names depend on which tables are exported. `account` is taken from a docs file path example and `generaljournalentry` from the docs reconciliation example; neither is guaranteed to exist in a given environment.

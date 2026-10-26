@@ -37,6 +37,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-aircall` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/aircall/README.md`
 - Exact lookback default and cap values not copied; cursor and strategy for every CI stream not individually verified.

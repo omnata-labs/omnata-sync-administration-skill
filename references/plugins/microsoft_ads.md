@@ -39,6 +39,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-bing-ads` at `src/plugin.py`, `src/standard_reporting.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/microsoft_ads/README.md`
 - Default cursor field name for metric reports not explicitly set in stream definitions; valid `reporting_timezone` values not listed here.

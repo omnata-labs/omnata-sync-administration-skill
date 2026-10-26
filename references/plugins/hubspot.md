@@ -63,7 +63,6 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-hubspot` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/hubspot/README.md`
 - Docs list "<object> Archived" streams (for example "Deals Archived"). Code has no such streams, archived records are handled by `check_archive`. Code is followed here.
 - Checkbox values are compared to the string `"True"` in code. Whether a boolean or string should be passed via the API was not verified. Copy from a UI-created sync if unsure.

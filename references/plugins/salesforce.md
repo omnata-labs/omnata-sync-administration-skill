@@ -64,6 +64,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-salesforce` at `src/plugin.py`, `src/plugin_inbound_functionality.py`, `src/plugin_outbound_functionality.py`, `src/plugin_base.py` (V3.17, `origin/main`)
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/salesforce/README.md`
 - The exact conditions gating `assignment_rule_name` (object-specific checks after the strategy test) were not fully traced.

@@ -17,6 +17,5 @@ For Dynamics 365 CE (Dataverse) data, the `dynamics_365_synapse_link` plugin lis
 
 ## Sources
 
-- Code: `plugin-dynamics-365-ce` contains only `README.md` (no source code).
 - Docs: no matching folder under `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/`.
 - Plugin ID, FQN, directions and all configuration could not be verified.

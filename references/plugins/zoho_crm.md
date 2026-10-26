@@ -64,6 +64,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-zoho-crm` at `src/plugin.py`, `src/udfs/create_records.py`, `src/udfs/search_records.py`, `src/udfs/delete_records.py`, `integration_tests/zoho_api.py` (UDTF call pattern); branch `main`, tag V2.5
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/zoho_crm/README.md` (agrees: no inbound configuration fields)
-- Not verified: `module` and `find_by` have no explicit `required=` flag. Example stream names are standard Zoho module API names; actual list depends on the org. `<plugin_app>` is the installed plugin application name (not verified as a fixed value).
+- Not verified: whether `module` and `find_by` are required. Example stream names are standard Zoho module API names; actual list depends on the org. `<plugin_app>` is the installed plugin application name (not verified as a fixed value).

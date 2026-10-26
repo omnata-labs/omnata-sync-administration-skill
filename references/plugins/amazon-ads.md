@@ -15,6 +15,5 @@ The docs page contains only "Coming soon...".
 
 ## Sources
 
-- Code: `omnata-labs/plugin-amazon-ads`, empty repository (no commits).
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/amazon-ads/README.md` (placeholder only).
 - Nothing about this plugin's configuration could be verified.

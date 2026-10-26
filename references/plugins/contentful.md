@@ -47,6 +47,5 @@ The example assumes a Content Management API connection. For a Content Delivery 
 
 ## Sources
 
-- Code: `plugin-contentful` (`main`, 2026-10-21) at `src/plugin.py` (`connection_form`)
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/contentful/README.md`
 - Docs list only 8 streams and only describe CMA tokens. Code also has `entries_published` / `assets_published` and the Content Delivery API method; code wins.

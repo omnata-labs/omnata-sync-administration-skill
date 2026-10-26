@@ -41,6 +41,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-meta-marketing` at `src/plugin.py`, `src/standard_reporting.py`, `src/custom_reporting.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/meta_marketing/README.md` (agrees: inbound only, all streams support both strategies).
 - Not verified: the stored value format for multi-value `ad_accounts`, and the full list of `custom_breakdowns` slugs.

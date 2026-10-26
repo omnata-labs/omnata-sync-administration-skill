@@ -40,6 +40,5 @@ To restrict to one space, add for example `'cql_pages_clause', 'space = DEV'` to
 
 ## Sources
 
-- Code: `plugin-confluence` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/confluence/README.md`
 - Nothing material left unverified.

@@ -43,6 +43,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-reddit-ads` at `src/plugin.py`, `src/reporting.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/reddit_ads/README.md`
 - The literal option values for `reporting_mode` (constants `STANDARD_MODE` / `CUSTOM_MODE`) and the stored shape of the `ad_accounts` multi-select were not resolved. Copy them from a UI-created sync.

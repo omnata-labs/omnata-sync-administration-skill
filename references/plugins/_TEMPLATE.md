@@ -60,6 +60,5 @@ Plugin-specific caveats that affect programmatic configuration only (API limits 
 
 ## Sources
 
-- Code: `omnata-labs/plugin-<repo>` at `src/plugin.py` (plus any other files used)
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/<docs_folder>/README.md`
 - Anything you could not verify from these sources, say so here.

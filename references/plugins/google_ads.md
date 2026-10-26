@@ -19,7 +19,7 @@ Follow `configure-connections.md`. One method, `OAuth` (`authorization_code`), s
 - `backfill_days` (optional): days of history on the first sync of a metric report. Default `365`. Capped per report where Google limits it.
 - Custom mode only: `resource` (required, the Google Ads resource to report on), `attribute_fields` (optional, comma-separated fully-qualified attribute fields such as `campaign.name`), `segments` (optional, comma-separated fully-qualified segments such as `segments.device`). `field_guidance` is a read-only information field, do not pass it.
 
-**Streams**: depend on `reporting_mode`. Standard mode returns a static catalog defined in `standard_reporting.py`, for example `campaign_performance`, `ad_group_performance`, `conversion_actions`, `labels`, `campaign_budgets`. Custom mode returns a single stream named `{resource}_report_daily`, built dynamically from `resource`, `attribute_fields` and `segments` (requires API calls to Google's field metadata). All streams have source-defined primary keys. Metric reports have a source-defined cursor (`segments.date`). Entity reports have no cursor. For reports with a Google lookback limit, a saved cursor older than that limit (for example 90 days for `click_performance`) is clamped forward to it, so data older than the limit is not re-requested after a long pause.
+**Streams**: depend on `reporting_mode`. Standard mode returns a static catalog, for example `campaign_performance`, `ad_group_performance`, `conversion_actions`, `labels`, `campaign_budgets`. Custom mode returns a single stream named `{resource}_report_daily`, built dynamically from `resource`, `attribute_fields` and `segments` (requires API calls to Google's field metadata). All streams have source-defined primary keys. Metric reports have a source-defined cursor (`segments.date`). Entity reports have no cursor. For reports with a Google lookback limit, a saved cursor older than that limit (for example 90 days for `click_performance`) is clamped forward to it, so data older than the limit is not re-requested after a long pause.
 
 **Sync strategies supported**: metric reports support `Incremental` and `Full Refresh`. Entity reports are `Full Refresh` only.
 
@@ -52,7 +52,6 @@ The manifest lists `Create` and `Upsert`, but `outbound_configuration_form` and 
 
 ## Sources
 
-- Code: `omnata-labs/plugin-google-ads` branch `main` (latest commit 2026-10-08) at `src/plugin.py`, `src/standard_reporting.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/google_ads/README.md`
 - Docs describe a "Campaign Report Grouping" multi-select parameter for Standard mode. No such field exists in `inbound_configuration_form`, so it is omitted here. Its parameter name could not be verified.
 - Docs say 28 standard reports. Exact count not re-verified against code.

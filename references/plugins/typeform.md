@@ -38,6 +38,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-typeform` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/typeform/README.md` (agrees: no outbound, Full Refresh and Incremental)
 - Not verified: the exact stored value format for `workspace` (ID vs object with metadata).

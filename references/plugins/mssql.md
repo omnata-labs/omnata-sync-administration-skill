@@ -48,6 +48,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-mssql` branch `main-v1` (latest commit 2026-10-19) at `src/plugin.py`, `src/metadata/database_metadata.py`, `src/inbound/inbound_base.py`, `src/inbound/inbound_change_data_capture.py`, `docs/guide-adding-columns-to-cdc-table.md`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/mssql/README.md`
 - Not verified: the FQN (derived from `developer_id='monitorial'`), and the exact stored format for a multi-select `schema` value.

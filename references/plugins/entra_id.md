@@ -12,7 +12,7 @@
 **Sync parameters** (`SYNC_PARAMETERS`):
 - `max_concurrent_streams` (required): slider from 1 to 10, default 5. Maximum number of streams processed concurrently.
 
-**Streams**: static list defined in `plugin_api_documents.py` (`ALL_SCHEMAS`, only entries with `is_selectable=True`). Streams: `users`, `user_identities`, `user_assigned_licenses`, `user_assigned_plans`, `user_provisioned_plans`, `user_license_assignment_states`, `groups`, `user_group_memberships`. Every stream has a source-defined primary key (several are composite, for example `userId` + `skuId`) and a source-defined cursor, with no default cursor field. No overrides via `STREAM_PRIMARY_KEYS` / `STREAM_CURSOR_FIELDS` should be needed.
+**Streams**: static list: `users`, `user_identities`, `user_assigned_licenses`, `user_assigned_plans`, `user_provisioned_plans`, `user_license_assignment_states`, `groups`, `user_group_memberships`. Every stream has a source-defined primary key (several are composite, for example `userId` + `skuId`) and a source-defined cursor, with no default cursor field. No overrides via `STREAM_PRIMARY_KEYS` / `STREAM_CURSOR_FIELDS` should be needed.
 
 **Sync strategies supported**: `Full Refresh` only, for every stream. Incremental support is commented out in code.
 
@@ -38,7 +38,6 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-entra-id` at `src/plugin.py`, `src/plugin_api_documents.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/entra_id/README.md`
 - `inbound_stream_list` sets `primary_key_can_be_composite=False` while several streams declare composite keys. Behavioural impact not verified.
 - Manifest `docs_url` points to `apps/microsoft-entra-id`, but the docs folder is `entra_id`.

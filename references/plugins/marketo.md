@@ -33,6 +33,5 @@
 
 ## Sources
 
-- Code: `omnata-labs/plugin-marketo` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/marketo/README.md`. Docs list only Leads (Create, Update, Upsert); code also offers custom objects via `dedupe_by`. Code wins.
 - Not verified: the exact list of objects returned by `fetch_marketo_objects` at runtime, and the full set of required mappings for custom objects (lines around the mapper were not fully traced).

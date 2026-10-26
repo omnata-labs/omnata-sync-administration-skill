@@ -15,6 +15,5 @@ Do not configure Harvest syncs from this page. If a Harvest connection exists in
 
 ## Sources
 
-- Code: `omnata-labs/plugin-harvest` at `src/plugin.py`, `README.md`
 - Docs: none. There is no Harvest folder under `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/`.
 - Plugin ID, FQN, parameters and streams could not be verified because the code is template-only. File named after the repo.

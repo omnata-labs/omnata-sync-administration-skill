@@ -37,6 +37,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-activecampaign` (`main-v1`, 2026-10-13) at `src/plugin.py` (`connection_form`), `src/activecampaign_api.py` (INBOUND_STREAMS, STREAM_CURSORS)
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/activecampaign/README.md`
 - FQN derived from developer_id and plugin_id, not confirmed against a live connection.

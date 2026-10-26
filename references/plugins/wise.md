@@ -36,6 +36,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-wise` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/wise/README.md` contains only a heading
 - Not verified: stored value format for `profile_id` (ID string vs object with metadata).
