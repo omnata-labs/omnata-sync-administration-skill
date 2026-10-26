@@ -1,6 +1,6 @@
 # Plugin reference pages
 
-Per-plugin pages for connections and syncs. Each page follows `_TEMPLATE.md` and is built from `omnata-labs/plugin-*` source (`src/plugin.py` manifest and configuration forms) and `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/`. Where code and docs disagree, the page follows the code and notes the conflict under Sources.
+Per-plugin pages for connections and syncs. Each page follows `_TEMPLATE.md` and is verified against the plugin's behaviour and its docs page. Where the plugin and docs disagree, the page follows the plugin and notes the conflict under Sources.
 
 `configure-connections.md` and `configure-syncs.md` keep the universal inbound and outbound procedure reference, and route plugin-specific detail to `references/plugins/<plugin_id>.md`.
 
@@ -55,23 +55,13 @@ Outbound rule: outbound syncs can only be created from the definition of an exis
 | `zendesk_support.md` | Zendesk Support | Yes | Create, Upsert, Mirror, Update, Delete |
 | `zoho_crm.md` | Zoho CRM | Yes | Create, Update, Upsert |
 
-## Repos with no implemented plugin
+## No released plugin
 
-Stub pages only. Do not publish until the plugin exists.
+Stub pages only: `amazon-ads.md`, `azure-consumption.md`, `dynamics-365-ce.md`, `harvest.md`, `tiktok-ads.md`. Do not configure syncs from them.
 
-| Page | Repo | Finding |
-|---|---|---|
-| `amazon-ads.md` | `plugin-amazon-ads` | Empty repo. Docs page says "Coming soon". |
-| `azure-consumption.md` | `plugin-azure-consumption` | Unmodified plugin template. |
-| `dynamics-365-ce.md` | `plugin-dynamics-365-ce` | No `src/`, one-line README. |
-| `harvest.md` | `plugin-harvest` | Unmodified plugin template. |
-| `tiktok-ads.md` | `plugin-tiktok-ads` | Unmodified plugin template. Docs page is a heading only. |
+## No reference page yet
 
-Excluded as scaffolding: `plugin-template`, `plugin-dev-automation`.
-
-## Docs pages with no plugin repo in omnata-labs
-
-Not drafted: `approvalmax`, `attio`, `bom-weather-data`, `mrpeasy`, `payhero`, `pinterest-ads`. These may be published from another org or not built yet.
+`approvalmax`, `attio`, `bom-weather-data`, `mrpeasy`, `payhero`, `pinterest-ads`. Copy parameters from a UI-created sync instead.
 
 ## Open items before publishing
 

@@ -1,19 +1,7 @@
 # Amazon Ads
 
-| | |
-|---|---|
-| Plugin ID | Unknown (repo has no code) |
-| Plugin FQN | Unknown |
-| Directions | Unknown |
-| Docs | `apps/amazon-ads/README.md` |
-
-## Status
-
-The local clone `/tmp/plugin-amazon-ads` contains only a `.git` directory and its `main` branch has no commits. There is no `src/plugin.py` and no `get_manifest()`, so no plugin ID, directions, sync parameters or streams can be determined.
-
-The docs page contains only "Coming soon...".
+No released plugin. Do not configure syncs from this page. If a connection for this app exists in an account, check its real plugin via `DATA_VIEWS.CONNECTION.PLUGIN_FQN` and copy parameters from a UI-created sync.
 
 ## Sources
 
-- Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/amazon-ads/README.md` (placeholder only).
-- Nothing about this plugin's configuration could be verified.
+- Docs: `apps/amazon-ads/README.md` ("Coming soon" only).
