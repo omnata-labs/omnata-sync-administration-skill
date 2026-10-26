@@ -57,6 +57,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-monday` at `src/plugin.py`, `src/plugin_api_documents.py`, `src/inbound/stream_metadata.py`, `src/models/monday_object.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/monday/README.md` (agrees on Create, Upsert, Mirror and items only).
 - Not verified: whether `monday_object` is marked required, the required flag on the boards-mode workspace fields, and the FQN (derived from `developer_id`, not observed in `PLUGIN_FQN`).

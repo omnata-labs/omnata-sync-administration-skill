@@ -33,9 +33,9 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 - Stream names are camelCase API collection names (`bounceLogs`, `contactTags`), so match the case exactly.
 - The available stream list depends on the ActiveCampaign plan behind the API key.
+- Connection method: "API Key" with `account_url` (the API URL, e.g. `https://<account>.api-us1.com`) and `api_token` (secret). Both are on Settings > Developer in ActiveCampaign; each user has their own key.
 
 ## Sources
 
-- Code: `omnata-labs/plugin-activecampaign` at `src/plugin.py`, `src/activecampaign_api.py` (INBOUND_STREAMS, STREAM_CURSORS)
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/activecampaign/README.md`
 - FQN derived from developer_id and plugin_id, not confirmed against a live connection.

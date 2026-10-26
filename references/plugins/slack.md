@@ -10,7 +10,7 @@
 ## Inbound
 
 **Sync parameters** (`SYNC_PARAMETERS`):
-- `start_date` (optional, text input): labelled "Start Date". It is not read anywhere else in `plugin.py`, so it appears to have no effect.
+- `start_date` (optional, text input): labelled "Start Date". It appears to have no effect.
 
 **Streams**: static, single stream `conversations_list` (primary key `id`, default cursor `updated`).
 
@@ -51,7 +51,6 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-slack` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/slack/README.md`
 - Existing reference: `omnata-sync-administration-skill/references/configure-syncs.md`, section "Outbound Plugin: Slack" (consistent with code)
 - Conflict: docs say `conversations_list` is Full Refresh only; code lists both Full Refresh and Incremental. Docs list the outbound strategy as "Create"; code registers it as `Post Message`.

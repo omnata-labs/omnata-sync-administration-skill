@@ -42,11 +42,10 @@ The example assumes a Content Management API connection. For a Content Delivery 
 
 ## Notes
 
-- Connection methods: "Content Delivery API" (`cda_token`, `space_id`, `environment_id`, optional `use_preview`) and "Content Management API" (`cma_token`). The method controls both the parameter form and the stream list.
+- Connection methods: "Content Delivery API" (`cda_token` (secret), `space_id`, `environment_id`, optional `use_preview`) and "Content Management API" (`cma_token`, secret). The method controls both the parameter form and the stream list.
 - Organization IDs can be listed with the plugin's `UDFS.FETCH_ORGANIZATIONS` function (see docs).
 
 ## Sources
 
-- Code: `plugin-contentful` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/contentful/README.md`
 - Docs list only 8 streams and only describe CMA tokens. Code also has `entries_published` / `assets_published` and the Content Delivery API method; code wins.

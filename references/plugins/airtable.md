@@ -55,6 +55,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-airtable` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/airtable/README.md`
 - Conflict: docs say Incremental is supported for tables with a last modified time field; code only declares `Full Refresh`. Code wins.

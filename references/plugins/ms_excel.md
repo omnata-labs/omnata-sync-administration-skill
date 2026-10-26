@@ -59,6 +59,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-microsoft-excel` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/ms_excel/README.md` (agrees on Replace outbound).
 - Not verified: which multi-file mode exposes `primary_key_columns`, the exact `selected_file` value format, and whether the docs describe the mode values identically.

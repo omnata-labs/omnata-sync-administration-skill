@@ -37,6 +37,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-questdb` at `src/plugin.py`, `src/metadata/database_metadata.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/questdb/README.md`
 - No real table names are known from code; the example uses placeholders.

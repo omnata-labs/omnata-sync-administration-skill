@@ -34,11 +34,10 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 - Synapse Link must be configured with "Enable incremental update folder structure", otherwise the plugin cannot read the export.
 - The connection requires a Snowflake storage integration (`azure_storage_integration`) granted to both `OMNATA_SYNC_ENGINE` and the plugin application, plus an Azure service principal with Storage Blob Data Reader on the storage account.
-- Tuning parameter (not a sync parameter): `max_concurrent_folders` (1 to 50) controls how many date folders are processed concurrently.
-- `d365_environment_url` / `d365_crm_environment_url` on the connection are only needed for the reconciliation feature described in the docs.
+- Tuning parameter (not a sync parameter): `max_concurrent_folders` (1 to 50) controls how many date folders are processed concurrently (default 24).
+- `d365_environment_url` / `d365_crm_environment_url` on the connection are only needed for reconciliations (F&O and CRM/Dataverse respectively). Reconciliations are managed in the plugin's Streamlit app `reconciliation_ui."D365 Reconciliation"` (application roles `omnata_management` or `dynamics_reconciliation_management`), not through sync parameters.
 
 ## Sources
 
-- Code: `plugin-dynamics-365-synapse-link` at `src/plugin.py`, `src/metadata/model_metadata.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/dynamics_365_synapse_link/README.md`
-- Stream names depend on which tables are exported. `account` is taken from a docs file path example and `generaljournalentry` from the docs reconciliation example; neither is guaranteed to exist in a given environment. The default for `max_concurrent_folders` was not checked.
+- Stream names depend on which tables are exported. `account` is taken from a docs file path example and `generaljournalentry` from the docs reconciliation example; neither is guaranteed to exist in a given environment.

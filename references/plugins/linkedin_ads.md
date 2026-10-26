@@ -37,6 +37,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-linkedin-ads` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/linkedin_ads/README.md` (agrees: no outbound, offline conversions "coming soon").
 - Not verified: the exact JSON format the UI stores for the multi-select `ad_accounts` value; the comma-separated string is inferred from `sync_inbound` splitting on commas.

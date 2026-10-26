@@ -15,6 +15,5 @@ Do not use this page to configure syncs. Revisit once the plugin is implemented.
 
 ## Sources
 
-- Code: `omnata-labs/plugin-azure-consumption` at `src/plugin.py` (template scaffold)
 - Docs: none found
 - Not verified: real plugin_id, FQN, streams, parameters or strategies for Azure Consumption.

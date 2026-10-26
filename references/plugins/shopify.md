@@ -55,6 +55,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-shopify` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/shopify/README.md`
-- Not verified: whether `shopify_object` is required (no `required=` flag visible in the form). Cursor fields for each stream were not individually checked.
+- Not verified: whether `shopify_object` is required. Cursor fields for each stream were not individually checked.

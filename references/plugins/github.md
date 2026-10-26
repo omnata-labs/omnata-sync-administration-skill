@@ -1,4 +1,4 @@
-# Github
+# GitHub
 
 | | |
 |---|---|
@@ -21,7 +21,7 @@
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
     SYNC_SLUG          => 'github-inbound',
-    SYNC_NAME          => 'Github to Snowflake',
+    SYNC_NAME          => 'GitHub to Snowflake',
     CONNECTION_SLUG    => '<connection_slug>'::VARIANT,
     STREAM_NAMES       => ['repositories', 'commits', 'pull_requests'],
     SYNC_STRATEGY      => 'Auto'::VARIANT,
@@ -39,10 +39,9 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 - One organisation per sync. To cover multiple organisations, create one sync each.
 - GitHub rate limits are per identity (5,000 requests/hour for PAT or OAuth tokens). For large orgs, split repositories across syncs with narrower `repository_pattern` values or stagger schedules.
-- OAuth connections need the `repo` and `read:org` scopes. Org streams (`organization_members`, `organization_teams`) need org read access.
+- Connection methods: "OAuth App" (authorization code; endpoints `https://github.com/login/oauth/authorize` and `https://github.com/login/oauth/access_token`, scopes `repo`, `read:org`, `user`) and "Personal Access Token" (`personal_access_token`, secret). Org streams (`organization_members`, `organization_teams`) need org read access.
 
 ## Sources
 
-- Code: `omnata-labs/plugin-github` at `src/plugin.py`, `src/json_schemas/`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/github/README.md`
 - Docs page contains an older stream list (four streams) alongside the full ten-stream table. Code matches the ten-stream table.

@@ -38,6 +38,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-netsuite` at `src/plugin.py`, `src/metadata.py` (`build_streams_data`), `src/metadata_system_static.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/netsuite/README.md`
 - Exact casing of discovered table names depends on the live `OA_TABLES` catalog. The example names are taken from the static system table list in code and were not checked against a live account.

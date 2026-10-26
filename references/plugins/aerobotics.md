@@ -11,7 +11,7 @@
 
 **Sync parameters** (`SYNC_PARAMETERS`): None, pass `OBJECT_CONSTRUCT()`.
 
-**Streams**: Static list defined in `plugin_objects.py` (`ALL_SCHEMAS`), for example `farms`, `farms_all`, `orchards`, `seasons`, `bins`, `surveys`, `fruit_sizes_bins`. Every stream has a source-defined primary key (its id field) and `source_defined_cursor` true. Some streams declare a dependency on a parent stream, so select parents alongside children.
+**Streams**: Static list, for example `farms`, `farms_all`, `orchards`, `seasons`, `bins`, `surveys`, `fruit_sizes_bins`. Every stream has a source-defined primary key (its id field) and `source_defined_cursor` true. Some streams declare a dependency on a parent stream, so select parents alongside children.
 
 **Sync strategies supported**: All streams support `Full Refresh`. Streams with a default cursor field (for example `captured_at` on the fruit size streams, `date` on survey streams) also support `Incremental`.
 
@@ -36,6 +36,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-aerobotics` at `src/plugin.py`, `src/plugin_objects.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/aerobotics/README.md`
 - Conflict: docs omit `farms_all`, which exists in code. Exact per-stream dependency map and cursor list not fully verified.

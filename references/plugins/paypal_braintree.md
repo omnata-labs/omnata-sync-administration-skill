@@ -37,6 +37,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-paypal` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/paypal_braintree/README.md`
 - Conflict: docs name the `disputes` cursor `receivedDate`; code sets `default_cursor_field="received_date"`. Code used here.

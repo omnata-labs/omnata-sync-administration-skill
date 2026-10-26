@@ -43,6 +43,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `plugin-business-central` at `src/plugin.py`, `src/plugin_objects.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/microsoft-dynamics-365-business-central/README.md`. Folders `dynamics_365_business_central` and `dynamics_business_central` contain only `release-history.md`.
 - Stream names in the example are taken from the docs entity list; actual names are generated from tenant metadata and could not be verified from code. Exact value format for a multi-select dropdown parameter (array of IDs) is assumed.

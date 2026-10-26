@@ -39,6 +39,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-mysql` at `src/plugin.py`, `src/metadata.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/mysql/README.md`
-- Not verified: default values for the tuning parameters (defined in `config_defaults.py`, not read).
+- Not verified: default values for the tuning parameters.

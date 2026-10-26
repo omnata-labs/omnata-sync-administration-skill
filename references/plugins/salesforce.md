@@ -54,11 +54,15 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Notes
 
-- Uses Bulk API with PK chunking where possible; tuning parameters include `initial_bulk_query_limit`, `pk_chunk_size`, `max_concurrent_streams` (inbound) and `batch_size`, `batch_parallel_limit` (outbound).
+- Uses Bulk API with PK chunking where possible; tuning parameters (not sync parameters) include `initial_bulk_query_limit`, `pk_chunk_size` and `batch_size`, `batch_parallel_limit` (outbound). Inbound also has:
+  - `max_concurrent_streams`: streams processed concurrently (1 to 64, default 2, capped at the number of streams in the run).
+  - `skip_empty_objects_via_record_count` (default true): uses the approximate `limits/recordCount` API and marks streams with a count of 0 complete without querying. Objects missing from that API fall back to a `COUNT()` query.
+  - `disable_secondary_field_incrementals` (default false): sort and page on the cursor field only, for objects whose bulk queries time out.
+- SOAP-style `REQUEST_LIMIT_EXCEEDED` responses (HTTP 403) are retried as rate limits (429), inbound and outbound. Treat them as throttling, not a permissions error.
+- `*__Tag` objects use `SystemModstamp` as the cursor.
 - Change Data Capture `*ChangeEvent` objects are excluded from the stream list.
 
 ## Sources
 
-- Code: `omnata-labs/plugin-salesforce` at `src/plugin.py`, `src/plugin_inbound_functionality.py`, `src/plugin_outbound_functionality.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/salesforce/README.md`
 - The exact conditions gating `assignment_rule_name` (object-specific checks after the strategy test) were not fully traced.

@@ -46,6 +46,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `plugin-databricks` at `src/plugin.py`, `src/metadata/database_metadata.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/databricks/README.md`
 - Stream names are tenant-specific, so the example uses placeholders. Value format for `schema` in `multi` mode (array) is assumed, not verified.

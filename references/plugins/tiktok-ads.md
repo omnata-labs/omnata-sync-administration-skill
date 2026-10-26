@@ -20,6 +20,5 @@ Do not use this page to configure syncs. Revisit once the plugin is implemented.
 
 ## Sources
 
-- Code: `omnata-labs/plugin-tiktok-ads` at `src/plugin.py` (template scaffold)
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/tiktok-ads/README.md` contains only a heading
 - Not verified: real plugin_id, FQN, streams, parameters or strategies for TikTok Ads.

@@ -257,3 +257,24 @@ Clean up my test Google Sheets connection and its syncs.
 - Deletes each sync with `DELETE_SYNC('<slug>', NULL)`, then the connection with `DELETE_CONNECTION`
 - Confirms they're gone from `DATA_VIEWS.SYNC` and `DATA_VIEWS.CONNECTION`
 - Offers `cortex secret delete` for any locally stored secrets
+
+---
+
+## 15. Plugin reference pages (new capabilities)
+
+**Tests:** Plugin pages reflect recent plugin releases
+
+```
+Can I send emails from Snowflake with the Mailgun plugin, and only pull logs for one domain?
+```
+
+**What to verify:**
+- Reads `references/plugins/mailgun.md`; says outbound `Send` exists and needs an existing sync definition to copy
+- Uses the `domains` inbound sync parameter (comma-separated) for log filtering
+
+```
+How do I search Zoho CRM records from SQL?
+```
+
+**What to verify:**
+- Points to the `SEARCH_RECORDS` UDTF in the plugin app's `UDFS` schema, with a `PLUGIN_CONNECTION('<connection_slug>')` argument

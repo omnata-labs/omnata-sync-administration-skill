@@ -56,7 +56,6 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-sfmc` at `src/plugin.py`, `src/plugin_inbound_functionality.py`, `src/plugin_outbound_functionality.py`, `src/sfmc_helpers/journeys.py`, `src/sfmc_helpers/schemas.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/sfmc/README.md`
 - Conflict: docs say Data Extensions are Full Refresh only; code also allows Incremental for single-PK Data Extensions. Code used here. Docs do not mention tracking extract streams.
 - `data_extension_name` stores option metadata, so hand-built values are risky. Not verified how to construct it outside the UI.

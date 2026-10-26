@@ -60,7 +60,6 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-jira` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/jira/README.md`
 - Upsert matching key per target type was not traced in code. Copy from a UI-created sync.
 - Manifest `docs_url` is the generic `https://docs.omnata.com`.

@@ -133,7 +133,6 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-google-sheets` at `src/plugin.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/google_sheets/README.md`
 - Docs list Full Refresh as the only inbound strategy. Code allows Incremental for multi-file modes. Code is followed here.
 - Docs describe `primary_key_columns` as Multi-File Individual only. Code shows the field in all modes.

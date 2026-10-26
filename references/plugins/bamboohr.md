@@ -36,6 +36,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Sources
 
-- Code: `omnata-labs/plugin-bamboohr` at `src/plugin.py`, `src/plugin_api_documents.py`, `src/plugin_models.py`
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/bamboo_hr/README.md`
 - Exact naming of generated table streams not verified.
