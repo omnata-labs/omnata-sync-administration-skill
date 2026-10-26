@@ -57,6 +57,8 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 - OAuth connections need scopes per stream and target type (listed in the docs). Asset Management also needs `read:servicedesk-request` for workspace lookup.
 - Issue child streams are fetched per issue, which adds significant time to initial syncs. Narrow with `jql_issues_clause` where possible.
+- Consumer UDFs/UDTFs (all take `CONNECTION_PARAMETERS` first; work with API token, OAuth and Service Account OAuth connections): `FETCH_PROJECTS`, `FETCH_USERS`, `FETCH_GROUPS`, `FETCH_GROUP_MEMBERS(GROUP_ID, INCLUDE_INACTIVE_USERS)`, `FETCH_PROJECT_VERSIONS(PROJECT_KEY)`, `FETCH_ALL_ISSUE_FIELDS`, `JQL_QUERY(QUERY, RECORD_LIMIT, FIELDS)`, `JQL_QUERY_COUNT(QUERY)`, `CREATE_ISSUE`, `CREATE_OR_UPDATE_ORGANIZATION`, `DELETE_ISSUES(ISSUE_IDS_OR_KEYS)`.
+- `DELETE_ISSUES` permanently deletes issues and their subtasks, one call per issue. Returns `ISSUE_ID_OR_KEY`, `STATUS` (`SUCCESS`, `NOT_FOUND`, `ERROR`), `RESULT`. Confirm with the user before running it.
 
 ## Sources
 
