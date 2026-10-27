@@ -59,6 +59,7 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 ## Notes
 
 - Outbound uses HubSpot import jobs, so the private app needs the `crm.import` scope. Dates are formatted `MM/DD/YYYY`. Tuning parameter `import_wait_time` (default 10 mins) controls import timeout.
+- Inbound tuning parameter `max_concurrent_streams` (1 to 10, default 5) sets how many streams are fetched in parallel. Capped at the number of streams in the sync. Tuning parameters can be changed without a change management review.
 - HubSpot does not bump last-modified dates on association changes, so incremental syncs with `include_associations` can miss association-only changes.
 
 ## Sources
