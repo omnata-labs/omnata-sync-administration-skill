@@ -61,4 +61,6 @@ Plugin-specific caveats that affect programmatic configuration only (API limits 
 ## Sources
 
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/<docs_folder>/README.md`
-- Anything you could not verify from these sources, say so here.
+- Conflict: where the docs and the plugin's behaviour disagree, say what the docs claim and what this page follows.
+- Anything you could not verify, say so here.
+- Do not cite plugin source files or line numbers. Consumers cannot open them; put code citations in the PR body.

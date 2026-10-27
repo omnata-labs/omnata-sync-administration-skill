@@ -23,7 +23,7 @@ Follow `configure-connections.md`. Two methods, both OAuth password grant (no br
 - `reprocess_window_days` / `reprocess_interval_hours` (defaults 7 / 12): periodic full re-read of `timecards` and `timecard_spans`. Window capped at 35; set window to 0 to disable (interval cannot be 0).
 - `detect_deletes_via_audit` (checkbox, default false): detect deletes via audit logs.
 
-Tuning parameters (`inbound_tuning_parameters`): `rest_batch_size` (default 500), `date_chunk_days` (default 30), `detection_window_days`.
+Tuning parameters (`inbound_tuning_parameters`): `rest_batch_size` (default 500), `date_chunk_days` (default 30), `detection_window_days`, `workload_read_timeout_seconds` (default 180). If `workload_planner` fails with read timeouts, raise `workload_read_timeout_seconds`; timed-out batches are already retried one location at a time before failing.
 
 **Streams**: static list. Representative: `employees`, `timecards`, `timecard_exceptions`, `timecard_spans` (both depend on `timecards`), `schedules`, `workload_planner`, `timeoff_requests`, `jobs`. All define primary key `id` and a default cursor.
 
