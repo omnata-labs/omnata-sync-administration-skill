@@ -48,10 +48,11 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 ## Notes
 
 - API rate limits depend on the Zendesk plan; see docs before raising concurrency.
-- Only `ConnectivityOption.DIRECT` is supported.
+- Supports inbound record filtering (Sync Engine custom record filtering via a user-defined function, added in engine V6.40).
+- Only direct connectivity is supported.
 - Connection method: "OAuth (User Created)" (authorization code; fields `subdomain`, `product_plan` (`free`, `team`, `professional`, `enterprise`; used for rate-limit quota), optional `high_volume_api_addon`). OAuth template endpoints are `https://<Zendesk subdomain>.zendesk.com/oauth/authorizations/new` and `https://<Zendesk subdomain>.zendesk.com/oauth/tokens`, scopes `read`, `write`.
 
 ## Sources
 
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/zendesk_support/README.md`
-- Not verified: whether `zendesk_object` and `update_field` are required. The effect of `max_concurrent_queries_per_stream` could not be confirmed. Cursor fields are not declared, so incremental streams may need `STREAM_CURSOR_FIELDS` or rely on plugin-internal state; not verified.
+- Not verified: whether `zendesk_object` and `update_field` are required. The effect of `max_concurrent_queries_per_stream` could not be confirmed. How inbound record filtering is configured (UDF signature, sync parameter) is not verified. Cursor fields are not declared, so incremental streams may need `STREAM_CURSOR_FIELDS` or rely on plugin-internal state; not verified.

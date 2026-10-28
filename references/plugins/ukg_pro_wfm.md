@@ -47,8 +47,11 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 - Sync parameters change API date windows; see the "Sync options" table in the docs for defaults and effects.
 - `OAuth (Password-Realm)` needs network access to both the `api_url` and `token_url` hosts; `OAuth (Password)` only the `api_url` host.
+- Transient UKG errors are retried on all streams. A read that still fails after retries fails the stream (it is no longer skipped); this applies to `employees`, the timecard audit, and timecard and schedule change detection. Treat such failures as UKG-side or connectivity issues and rerun.
+- Consumer UDTF `DATA_MULTI_READ(CONNECTION_PARAMETERS, SELECT_ARRAY, FROM_OBJECT, WHERE_ARRAY, RESULT_COUNT, RESULT_INDEX, OPTIONS, SORT_BY, GROUP_BY)` calls UKG `commons/data/multi_read` directly; arguments after `FROM_OBJECT` default to NULL. Returns one row per child: `RAW_CHILD` (OBJECT), `METADATA` (OBJECT). Example `SELECT_ARRAY`: `[{"key": "EMP_COMMON_FULL_NAME"}]`; `FROM_OBJECT` holds the view plus `employeeSet` or `locationSet`.
 
 ## Sources
 
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/ukgpro/README.md`
+- Not verified: consumer schema containing `DATA_MULTI_READ`.
 - Not verified: numeric default of `detection_window_days` (`AUDIT_MAX_RANGE_DAYS`, not traced).
