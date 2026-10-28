@@ -207,7 +207,6 @@ My normalized view for the Contact object is throwing a SQL error — what's wro
 ```
 omnata-sync/SKILL.md
 omnata-sync/README.md
-omnata-sync/TEST-PROMPTS.md
 omnata-sync/references/actions.md
 omnata-sync/references/branching.md
 omnata-sync/references/configure-connections.md

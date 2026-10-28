@@ -1,10 +1,3 @@
-<!-- contributor notes:
-     Section 1 (JSON extraction) — Cortex Code: Snowflake VARIANT column access patterns
-     Section 2 (Error origin taxonomy) — Co-work: aligned to Omnata state model
-     Section 3 (Remediation actions) — Co-work: Omnata UI and SQL actions
-     Section 4 (Destination errors) — Co-work: delegates to LLM general API knowledge
-     Section 5 (Fallback) — shared
--->
 # Omnata Error Knowledge Base
 
 When a sync or stream failure surfaces an error message, use this file to understand the
@@ -22,8 +15,6 @@ Snowflake or from the endpoint?** That determines who needs to act and where to 
 ---
 
 ## 1. Error JSON Shapes
-
-<!-- contributor: Cortex Code — Snowflake VARIANT column extraction patterns -->
 
 Errors are stored as JSON in VARIANT columns. The structure varies by connector. When
 extracting the error message, try these patterns in order:
@@ -79,8 +70,6 @@ any records or streams — typically a connection, authentication, or platform-l
 ---
 
 ## 2. Error Origin
-
-<!-- contributor: Co-work — aligned to Omnata APPLY_STATE model (SOURCE_FAILURE / DESTINATION_FAILURE) -->
 
 The first classification step is always: **where did the error originate?** This maps
 directly to Omnata's core state model and tells you who needs to act.
@@ -153,8 +142,6 @@ Check status pages before spending time on root cause analysis for platform-leve
 ---
 
 ## 3. Omnata Remediation Actions
-
-<!-- contributor: Co-work — Omnata UI and SQL remediation steps; Test/Re-authenticate updated by Cortex Code -->
 
 These are Omnata-specific actions. Map the error origin and type to the appropriate action.
 
@@ -229,8 +216,6 @@ These are Omnata-specific actions. Map the error origin and type to the appropri
 
 ## 4. Interpreting Destination Errors
 
-<!-- contributor: Co-work — delegates endpoint-specific knowledge to LLM general knowledge -->
-
 For the destination app's specific error codes and messages, **use your general knowledge**.
 You know what Salesforce's `DUPLICATES_DETECTED` means, what Airtable's `INVALID_RECORDS`
 response indicates, what a HubSpot `PROPERTY_DOESNT_EXIST` error requires, and so on.
@@ -252,8 +237,6 @@ the concrete Omnata action.
 ---
 
 ## 5. When No Pattern Matches
-
-<!-- contributor: shared -->
 
 If the error doesn't fit any origin or type above:
 1. Show the raw error text to the user

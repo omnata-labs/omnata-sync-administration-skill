@@ -299,8 +299,6 @@ last worked correctly and how much history has been affected by the current fail
 
 ## Normalized View Troubleshooting
 
-<!-- contributor: Co-work — scenario structure, grants checks, UI guidance; Cortex Code — stored procedure signatures and version history -->
-
 Omnata lands inbound data in raw tables (`INBOUND_RAW`) and builds normalized views on top
 (`INBOUND_NORMALIZED`) that flatten `RECORD_DATA` JSON into typed columns. Problems with
 those views are distinct from sync failures — the data may be arriving correctly but the
