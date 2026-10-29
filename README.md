@@ -52,8 +52,8 @@ CoCo clones the repository, discovers all skill files, and registers the skill i
 What skills do you have available?
 ```
 
-> **Pinning to a release:** To install a specific version instead of the latest, append the tag:
-> `omnata-labs/omnata-sync-administration-skill#v1.0.0`
+> **Pinning to a release:** By default CoCo tracks the latest version on `main`, which is recommended for most users. To install a specific version you have reviewed, append its tag from the [Releases page](https://github.com/omnata-labs/omnata-sync-administration-skill/releases):
+> `omnata-labs/omnata-sync-administration-skill#v<version>`
 
 ### Update
 
@@ -80,8 +80,8 @@ cd /path/to/your/project
 # Create the skills directory if it doesn't exist
 mkdir -p .snowflake/cortex/skills
 
-# Clone the skill at a specific release tag
-git clone --branch v1.0.0 https://github.com/omnata-labs/omnata-sync-administration-skill \
+# Clone the skill at a specific release tag (see the Releases page for the latest)
+git clone --branch v<version> https://github.com/omnata-labs/omnata-sync-administration-skill \
   .snowflake/cortex/skills/omnata-sync
 ```
 
@@ -135,7 +135,7 @@ Step 3 — Fetch the latest files:
 
 Step 4 — Verify the skill files are present:
 
-    LIST @<my_database>.<my_schema>.omnata_sync_skill/tags/v1.0.0/omnata-sync/;
+    LIST @<my_database>.<my_schema>.omnata_sync_skill/tags/v<version>/;
 
 Confirm the listing shows SKILL.md and a references/ folder.
 ```
@@ -144,12 +144,12 @@ Confirm the listing shows SKILL.md and a references/ folder.
 
 1. In Snowsight, go to **Projects → Workspaces** and create a new workspace called **Omnata Administration**
 2. Open the workspace and start a Cortex Code session
-3. Paste this prompt, substituting your database, schema, and repository name:
+3. Paste this prompt, substituting your database, schema, repository name and the release version from the [Releases page](https://github.com/omnata-labs/omnata-sync-administration-skill/releases):
 
 ```
 In database <my_database>, schema <my_schema>, there is a Git repository called
-OMNATA_SYNC_SKILL containing a Cortex Code skill. Please install version v1.0.0 as a
-permanent skill in this workspace by copying the files from the tags/v1.0.0 path into
+OMNATA_SYNC_SKILL containing a Cortex Code skill. Please install version v<version> as a
+permanent skill in this workspace by copying the files from the tags/v<version> path into
 .snowflake/cortex/skills/omnata-sync/.
 ```
 
@@ -168,7 +168,7 @@ ALTER GIT REPOSITORY <my_database>.<my_schema>.omnata_sync_skill FETCH;
 Then in your Omnata Administration workspace:
 
 ```
-Please update the omnata-sync skill from version v1.0.0 to v<new_version> using the
+Please update the omnata-sync skill from version v<current_version> to v<new_version> using the
 OMNATA_SYNC_SKILL git repository in <my_database>.<my_schema>.
 ```
 
@@ -205,21 +205,29 @@ My normalized view for the Contact object is throwing a SQL error — what's wro
 ## File structure
 
 ```
-omnata-sync/SKILL.md
-omnata-sync/README.md
-omnata-sync/references/actions.md
-omnata-sync/references/branching.md
-omnata-sync/references/configure-connections.md
-omnata-sync/references/configure-syncs.md
-omnata-sync/references/data-management.md
-omnata-sync/references/error-knowledge-base.md
-omnata-sync/references/event-table-diagnostics.md
-omnata-sync/references/monitoring-connections.md
-omnata-sync/references/monitoring-inbound.md
-omnata-sync/references/monitoring-outbound.md
-omnata-sync/references/monitoring-sync-status.md
-omnata-sync/references/monitoring-warehouse-cost.md
-omnata-sync/references/support-handoff.md
-omnata-sync/references/plugins/  (README.md, _TEMPLATE.md and one page per plugin)
-omnata-sync/scripts/render_storage_location.py
+VERSION
+SKILL.md
+README.md
+references/actions.md
+references/branching.md
+references/configure-connections.md
+references/configure-syncs.md
+references/data-management.md
+references/error-knowledge-base.md
+references/event-table-diagnostics.md
+references/monitoring-connections.md
+references/monitoring-inbound.md
+references/monitoring-outbound.md
+references/monitoring-sync-status.md
+references/monitoring-warehouse-cost.md
+references/support-handoff.md
+references/plugins/  (README.md, _TEMPLATE.md and one page per plugin)
+scripts/render_storage_location.py
+.github/workflows/release.yml
 ```
+
+---
+
+## Releases
+
+The current version is in `VERSION`. When a change merged to `main` bumps it, a GitHub Action tags the commit `v<version>` and publishes a release with generated notes. Patch bumps are for corrections and reference updates, minor bumps for new capabilities or plugin pages, and major bumps for breaking changes to how the skill is installed or used.
