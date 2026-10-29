@@ -13,7 +13,7 @@ Follow `configure-connections.md`. Record only what's specific to this plugin:
 - **Methods**: each method from `CONNECTION_FORM()`, its fields (mark secret ones), and whether it uses OAuth (grant type, client auth method).
 - **Where to get it**: per method, direct console links, APIs or scopes to enable, and common blockers.
 - **App-side access**: anything the user must do in the app for syncs to see data (sharing, permissions, admin consent).
-- **Credentials call**: an `UPDATE_CONNECTION_OBJECTS` example with placeholders, and the OAuth values from the plugin's template if any.
+- **Credentials call**: an `UPDATE_CONNECTION_OBJECTS` example with placeholders, and the OAuth values from the plugin's template if any. Put a line before it recommending the Omnata UI route for secrets, and saying the SQL records the value in query history.
 - **Quirks**: secret prefixes for redaction, `&` in endpoints (needs `--enable-templating STANDARD`), anything else seen in testing.
 
 ## Inbound
