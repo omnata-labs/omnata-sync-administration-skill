@@ -221,6 +221,12 @@ Follow the route the user chose in Step 0.
 
 The user enters every field (including non-secret ones) and finishes the connection in the Omnata UI. CoCo doesn't call `UPDATE_CONNECTION_OBJECTS`.
 
+**For OAuth methods**, the route is the same; the UI also runs the OAuth login. Before the user starts, CoCo:
+- Gives the hints for creating the OAuth app and finding its client ID and secret (Step 1c).
+- Tells the user to allow the **Snowsight route** redirect URI in their OAuth app (Step 3b), since the UI's login goes through Snowsight: `https://apps-api.c1.<region>.app.snowflake.com/oauth/complete-secret`. Work out `<region>` from the account's Snowsight host and show the full URI in a code block. Adding the CoCo-route URI as well does no harm, and helps if they ever finish a login from CoCo.
+- Passes `USES_OAUTH = true` in Step 2, as for any OAuth method.
+
+Steps:
 1. After Step 2, tell the user what to do, as numbered steps:
    1. Open the Omnata Sync Engine app in Snowsight.
    2. Go to the **<App>** plugin's page. The connection **<CONNECTION_NAME>** is listed there as in progress.
