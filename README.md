@@ -208,7 +208,6 @@ My normalized view for the Contact object is throwing a SQL error — what's wro
 VERSION
 SKILL.md
 README.md
-TEST-PROMPTS.md
 references/actions.md
 references/branching.md
 references/configure-connections.md

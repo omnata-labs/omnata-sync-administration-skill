@@ -158,8 +158,6 @@ Changing warehouses or schedules affects other workloads, so confirm with the us
 
 ### Step 3: Offer to Trigger a Re-Run (Optional)
 
-<!-- contributor: cortex-code — RUN_SYNC procedure integration and triage logic -->
-
 **Goal:** For failed or incomplete syncs found in Step 2, assess whether a re-run would be useful and offer to trigger one.
 
 **Triage each failed/incomplete sync using the Step 2 results.** Classify the error to determine whether re-running is appropriate.
