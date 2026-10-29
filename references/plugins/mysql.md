@@ -35,7 +35,7 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 - Tables without keys need `STREAM_PRIMARY_KEYS` for merge. Tables without a detected cursor column need `STREAM_CURSOR_FIELDS` for Incremental.
 - Tuning parameters (not sync parameters): `max_concurrent_streams` (1 to 64), `jdbcSetFetchSize` (100 to 100,000) and optional `cursor_default`, a starting cursor value for high watermark streams.
-- Outbound strategies are commented out in the manifest, so outbound cannot be configured.
+- Outbound syncs are not supported.
 
 ## Sources
 

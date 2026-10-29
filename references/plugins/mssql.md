@@ -44,7 +44,7 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 - Tuning parameters (`sync_tuning_parameters`, not sync parameters): `isolation_level` (`server` default, `committed`, `uncommitted`, `repeatable`), `max_concurrent_streams` (1 to 64, default 8), `max_concurrent_queries` (1 to 64, default 4), `max_records_per_query` (100K to 25M, default 1M), and optional `index_column_overrides`.
 - `index_column_overrides` is a JSON string mapping stream name to the column used to split a table into range queries, for example `'{"Customers": "CustomerID"}'` (default `'{}'`). Use it for heap tables or poorly distributed indexes. Keys must match the stream name exactly (so `<schema>_<object>` in multi schema mode). Malformed JSON is logged as a warning and ignored.
 - CDC capture instance changes (for example a second instance to add columns): after the old instance is disabled, refresh the sync's streams; the next run detects the new instance, resets LSN state and does a full refresh. If the stored instance no longer exists, the plugin falls back to an available instance for that table.
-- An `outbound_configuration_form` exists in code but the manifest registers no outbound strategies.
+- Outbound syncs are not supported.
 
 ## Sources
 

@@ -14,7 +14,7 @@
 
 **Streams**: static list: `users`, `user_identities`, `user_assigned_licenses`, `user_assigned_plans`, `user_provisioned_plans`, `user_license_assignment_states`, `groups`, `user_group_memberships`. Every stream has a source-defined primary key (several are composite, for example `userId` + `skuId`) and a source-defined cursor, with no default cursor field. No overrides via `STREAM_PRIMARY_KEYS` / `STREAM_CURSOR_FIELDS` should be needed.
 
-**Sync strategies supported**: `Full Refresh` only, for every stream. Incremental support is commented out in code.
+**Sync strategies supported**: `Full Refresh` only, for every stream.
 
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(

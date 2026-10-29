@@ -10,11 +10,11 @@
 ## Inbound
 
 **Sync parameters** (`SYNC_PARAMETERS`):
-- `base` (dropdown, dynamic list of bases; not flagged required in code but the stream list cannot be built without it): the Airtable base ID to sync from.
+- `base` (dropdown, dynamic list of bases; required in practice, since the stream list can't be built without it): the Airtable base ID to sync from.
 
 **Streams**: Dynamic, one stream per table in the selected base, named by the table name. The primary key is the table's primary field name. No default cursor is defined.
 
-**Sync strategies supported**: `Full Refresh` only, per code.
+**Sync strategies supported**: `Full Refresh` only.
 
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
@@ -31,6 +31,8 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 ```
 
 ## Outbound
+
+> **Warning:** `Replace` replaces the target table's contents in full: existing records not in the Snowflake data are removed. Confirm the target table with the user before creating or running the sync.
 
 **Target types** (`OUTBOUND_TARGET_TYPE`): Not used.
 
@@ -56,4 +58,4 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 ## Sources
 
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/airtable/README.md`
-- Conflict: docs say Incremental is supported for tables with a last modified time field; code only declares `Full Refresh`. Code wins.
+- Conflict: docs say Incremental is supported for tables with a last modified time field; the plugin supports `Full Refresh` only.

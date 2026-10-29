@@ -411,6 +411,8 @@ privileges — direct `GRANT SELECT` by other roles silently fails.
 
 **Step 1 — Refresh schemas from the source app:**
 
+This overwrites the stored stream schemas with the source app's latest. Columns removed in the source drop out of the normalized views at the next recreate. Tell the user before running it.
+
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.REFRESH_INBOUND_STREAM_SCHEMAS(
     '<sync_slug>',
@@ -422,6 +424,8 @@ CALL OMNATA_SYNC_ENGINE.API.REFRESH_INBOUND_STREAM_SCHEMAS(
 Confirm the returned OBJECT shows `"success": true` before proceeding.
 
 **Step 2 — Recreate normalized views:**
+
+This drops and rebuilds the views. Queries running against them at that moment fail. Grants made on the views are kept, since the app recreates them with `copy grants`. Tell the user before running it.
 
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.RECREATE_INBOUND_NORMALIZED_VIEWS(

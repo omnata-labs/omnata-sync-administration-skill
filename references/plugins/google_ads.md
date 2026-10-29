@@ -4,7 +4,7 @@
 |---|---|
 | Plugin ID | `google_ads` |
 | Plugin FQN | `OMNATA__GOOGLE_ADS` (as shown in `DATA_VIEWS.CONNECTION.PLUGIN_FQN`) |
-| Directions | Inbound: Yes. Outbound: Declared in manifest but not implemented (see Outbound) |
+| Directions | Inbound: Yes. Outbound: Not supported |
 | Docs | `apps/google_ads/README.md` |
 
 ## Connection
@@ -42,7 +42,7 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Outbound
 
-The manifest lists `Create` and `Upsert`, but `outbound_configuration_form` and `sync_outbound` are empty stubs (`pass`), and the docs state outbound is "Not yet supported". Do not configure outbound syncs for this plugin. No target types are defined.
+Outbound syncs are not supported for this plugin (the docs also say "Not yet supported"). Do not configure outbound syncs for it.
 
 ## Notes
 
@@ -53,6 +53,6 @@ The manifest lists `Create` and `Upsert`, but `outbound_configuration_form` and 
 ## Sources
 
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/google_ads/README.md`
-- Docs describe a "Campaign Report Grouping" multi-select parameter for Standard mode. No such field exists in `inbound_configuration_form`, so it is omitted here. Its parameter name could not be verified.
+- Docs describe a "Campaign Report Grouping" multi-select parameter for Standard mode. The plugin doesn't offer this parameter, so it's omitted here.
 - Docs say 28 standard reports. Exact count not re-verified against code.
 - Manifest `docs_url` is the generic `https://docs.omnata.com`.

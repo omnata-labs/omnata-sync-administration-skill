@@ -119,7 +119,7 @@ CALL OMNATA_SYNC_ENGINE.API.SET_SYNC_OWNER('<sync_slug>', '<branch_name or NULL>
 
 ### Delete a Sync
 
-Permanently deletes a sync. Irreversible. Confirm the sync slug with the user first.
+Permanently deletes a sync. Irreversible. **For inbound syncs, its raw tables and normalized views are deleted with it**, so the synced data is gone. Before calling, show the user the sync's name and slug, and for inbound syncs the tables and views that will go, and confirm the data isn't needed. Offer to copy it out first (below).
 
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.DELETE_SYNC(
@@ -153,6 +153,12 @@ Use this to remove test setups, or a connection and everything on it. Always lis
 4. **Delete the connection** with `DELETE_CONNECTION` (see Connection Actions). It fails while any sync still references it.
 5. **Confirm** the connection and syncs no longer appear in `DATA_VIEWS.CONNECTION` and `DATA_VIEWS.SYNC`.
 6. **Local secrets.** If the connection was created with the secure secret path, offer `cortex secret delete <key>` for each stored secret.
+
+**Everything for a plugin.** Only when the user asks to remove all of a plugin's syncs and connections, for example before uninstalling it:
+1. List every sync and connection for the plugin (`DATA_VIEWS.SYNC` and `DATA_VIEWS.CONNECTION` filtered on `PLUGIN_FQN`), with the inbound tables that will go.
+2. Show the full list and get the user's explicit confirmation.
+3. Call `DELETE_ALL_SYNCS('<PLUGIN_FQN>')`, then `DELETE_ALL_CONNECTIONS('<PLUGIN_FQN>')`.
+4. Confirm nothing for the plugin remains in either view.
 
 To abandon a connection that was never completed, use `CANCEL_CONNECTION_CREATION` instead (see `references/configure-connections.md`).
 
@@ -255,7 +261,7 @@ CALL OMNATA_SYNC_ENGINE.API.MARK_STREAMS_FOR_FULL_REFRESH(
   );
   ```
   `frequency_name` is one of `Always`, `Daily`, `Weekly`, `Monthly nth day`, `Monthly last day`, `Monthly nth weekday`, `Monthly last weekday`, `Custom`.
-- `MARK_PLUGIN_FOR_FULL_REFRESH('<PLUGIN_FQN>', <truncate>)` marks every stream of every sync and branch for a plugin. Confirm with the user before using it.
+- `MARK_PLUGIN_FOR_FULL_REFRESH('<PLUGIN_FQN>', <truncate>)` marks **every stream of every sync and branch** for a plugin. The next runs re-read everything, which uses warehouse credits and the source app's API rate limits, and with `truncate = true` empties the tables first. List the affected syncs and branches for the user and confirm before using it.
 
 ---
 
@@ -362,7 +368,7 @@ Before a bulk call, count the matching records in `DATA_VIEWS.OUTBOUND_SYNC_RECO
 
 ### Delete a Connection
 
-Permanently deletes a connection. **Fails if any syncs still reference it.**
+Permanently deletes a connection. **Irreversible.** It fails if any syncs still reference it. Show the user the connection's name and ID, and confirm before calling it.
 
 ```sql
 -- ⚠️ UNDOCUMENTED. Irreversible.
@@ -529,4 +535,4 @@ To see which hooks exist: `SHOW USER PROCEDURES LIKE 'SYNC_RUN_%_HOOK' IN ACCOUN
 | `SET_SYNC_CONNECTION` | `(SYNC_ID, CONNECTION_ID, SYNC_BRANCH_ID)` | ⚠️ Undocumented. `SYNC_BRANCH_ID` NULL for main |
 | `SET_DEFAULT_INBOUND_STORAGE_LOCATION` | `(OBJECT)` | Default for new syncs. See `references/data-management.md` |
 | `SET_APP_SETTING` | `(SETTING_NAME, SETTING_VALUE)` | ⚠️ Undocumented. Use only on Omnata support instruction. |
-| `DELETE_ALL_SYNCS` / `DELETE_ALL_CONNECTIONS` | `(PLUGIN_FQN)` | Deletes everything for a plugin. Irreversible; confirm explicitly |
+| `DELETE_ALL_SYNCS` / `DELETE_ALL_CONNECTIONS` | `(PLUGIN_FQN)` | **Deletes every sync (with its tables and views) or every connection for a plugin. Irreversible.** Use only through the "Clean Up Syncs and Connections" workflow above: list everything affected and get the user's explicit confirmation first |

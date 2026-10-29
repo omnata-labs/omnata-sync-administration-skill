@@ -12,7 +12,7 @@
 **Sync parameters** (`SYNC_PARAMETERS`):
 - `variations` (required): `AllVariations` (default) or `HighestVariation`. Which record variations to retrieve.
 - `company_numbers` (optional, default `100`): comma-separated company numbers (CONO) to filter on, for example `100,200`.
-- `min_acquisition_date` (optional): earliest date to load, format `yyyy-MM-dd`. Validated in code.
+- `min_acquisition_date` (optional): earliest date to load, format `yyyy-MM-dd`. The plugin rejects other formats.
 - `additional_where_clause` (optional): extra filter applied to all streams, for example `column_name = value`.
 - `include_reconciliation_records` (optional, default false): include records found in the latest reconciliation at the end of the run.
 - `include_reconciliation_delete_records` (optional, default false): include records no longer present in the source per the latest reconciliation.

@@ -48,7 +48,7 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 - `Update`: update existing records only, matched on the chosen ID field.
 - `Delete`: remove associations (Association Delete target only).
 
-**Sync parameters** (`SYNC_PARAMETERS`): no fields are flagged required in code.
+**Sync parameters** (`SYNC_PARAMETERS`): none are required.
 - Object Records: `hubspot_object` (target object), `hubspot_id_field` (record ID or a unique property such as email), `marketable_contact` (marketing status for imported contacts), `cleanup_default_associations` (remove default associations HubSpot adds after labelled association removal), `clear_null_field_values` (default false, explicitly clears nulls via an extra API pass).
 - Association Delete: `from_object_type`, `to_object_type`.
 
@@ -65,5 +65,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 ## Sources
 
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/hubspot/README.md`
-- Docs list "<object> Archived" streams (for example "Deals Archived"). Code has no such streams, archived records are handled by `check_archive`. Code is followed here.
-- Checkbox values are compared to the string `"True"` in code. Whether a boolean or string should be passed via the API was not verified. Copy from a UI-created sync if unsure.
+- Docs list "<object> Archived" streams (for example "Deals Archived"). The plugin has no separate archived streams; archived records are handled within the main streams (`check_archive`).
+- Whether checkbox values should be passed as a boolean or as the string `"True"` was not verified. Copy from a UI-created sync if unsure.

@@ -9,6 +9,8 @@
 
 ## Outbound
 
+> **Warning:** outbound syncs send Snowflake record data, such as lead details and email addresses, to Marketo. Confirm with the user which data is sent before creating or running the sync.
+
 **Target types** (`OUTBOUND_TARGET_TYPE`): Not used.
 
 **Strategies** (`SYNC_STRATEGY_NAME`):
@@ -33,5 +35,5 @@
 
 ## Sources
 
-- Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/marketo/README.md`. Docs list only Leads (Create, Update, Upsert); code also offers custom objects via `dedupe_by`. Code wins.
+- Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/marketo/README.md`. Docs list only Leads (Create, Update, Upsert); the plugin also supports custom objects via `dedupe_by`.
 - Not verified: the exact list of objects returned by `fetch_marketo_objects` at runtime, and the full set of required mappings for custom objects (lines around the mapper were not fully traced).

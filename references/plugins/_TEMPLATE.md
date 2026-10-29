@@ -20,7 +20,7 @@ Follow `configure-connections.md`. Record only what's specific to this plugin:
 
 Omit this section entirely if the plugin does not support inbound.
 
-**Sync parameters** (`SYNC_PARAMETERS`): list each field from `inbound_configuration_form` with name, whether required, and what it does. If there are none, write "None, pass `OBJECT_CONSTRUCT()`."
+**Sync parameters** (`SYNC_PARAMETERS`): list each inbound sync parameter with name, whether required, and what it does. If there are none, write "None, pass `OBJECT_CONSTRUCT()`."
 
 **Streams**: how streams are discovered (static list, dynamic from the API, depends on a sync parameter). Name a few representative streams. Note any streams without a source-defined primary key or default cursor (these need `STREAM_PRIMARY_KEYS` / `STREAM_CURSOR_FIELDS`).
 
@@ -48,7 +48,7 @@ Omit this section entirely if the plugin does not support outbound.
 
 **Strategies** (`SYNC_STRATEGY_NAME`): list each strategy name exactly as the plugin registers it, with one line on behaviour.
 
-**Sync parameters** (`SYNC_PARAMETERS`): list each field from `outbound_configuration_form` with name, whether required, and what it does.
+**Sync parameters** (`SYNC_PARAMETERS`): list each outbound sync parameter with name, whether required, and what it does.
 
 **Field mappings** (`FIELD_MAPPINGS`): `field_mapping_selector` or `jinja_template`, and what the target fields are (static list, dynamic from the API object chosen in sync parameters, etc.). Note any required mappings such as an identifier field for Update/Upsert.
 
@@ -63,4 +63,4 @@ Plugin-specific caveats that affect programmatic configuration only (API limits 
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/<docs_folder>/README.md`
 - Conflict: where the docs and the plugin's behaviour disagree, say what the docs claim and what this page follows.
 - Anything you could not verify, say so here.
-- Do not cite plugin source files or line numbers. Consumers cannot open them; put code citations in the PR body.
+- Do not cite plugin source files, line numbers or code internals ("in code", "stub", "commented out", form names). Consumers cannot open them; describe behaviour only, and put code citations in the PR body.

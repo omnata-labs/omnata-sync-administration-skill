@@ -1,6 +1,6 @@
 ---
 name: omnata-data-management
-description: "Design where inbound sync raw tables and normalized views land in Snowflake. Covers the three ways to operate storage locations: the app default, a custom default template (Settings > Data Management, SET_DEFAULT_INBOUND_STORAGE_LOCATION), and per-sync overrides (INBOUND_STORAGE_LOCATION). Use when: user wants to choose a database, schema or table naming for inbound data, set a storage location, build a naming system, change the default storage location, or check a template for collisions. Triggers: data management, storage location, inbound storage location, INBOUND_STORAGE_LOCATION, default storage location, SET_DEFAULT_INBOUND_STORAGE_LOCATION, where does my data land, which database, naming convention, schema per source, table naming, normalized view names, raw tables location."
+description: "Design where inbound sync raw tables and normalized views land in Snowflake. Covers the three ways to operate storage locations: the app default, a custom default template (Settings > Data Management, SET_DEFAULT_INBOUND_STORAGE_LOCATION), and per-sync overrides (INBOUND_STORAGE_LOCATION). Use when: user wants to choose a database, schema or table naming for inbound data, set a storage location, build a naming system, change the default storage location, or check a template for collisions. Triggers: Omnata data management, Omnata storage location, inbound storage location, INBOUND_STORAGE_LOCATION, Omnata default storage location, SET_DEFAULT_INBOUND_STORAGE_LOCATION, where does my Omnata data land, which database do Omnata syncs write to, Omnata table naming, Omnata normalized view names, Omnata raw tables location."
 ---
 
 # Data Management
@@ -81,7 +81,7 @@ These hold whatever the user chooses. Check every proposal against them.
 
 | Rule | Consequence |
 |---|---|
-| **Every stream must render to a unique raw table** | The sync engine reuses an existing raw table without checking which sync owns it, so two syncs writing to one raw table corrupts both, silently. Check for collisions with the preview script. Unlike normalized view clashes, this can't be accepted as a risk |
+| **Every stream must render to a unique raw table** | The sync engine reuses any existing raw table with the same name, whichever sync created it, so two syncs writing to one raw table corrupts both, silently. Check for collisions with the preview script. Unlike normalized view clashes, this can't be accepted as a risk |
 | **Custom schemas are rejected in the Omnata app database** | If `raw_database` or `normalized_database` is blank (the app database), the schema must be `INBOUND_RAW` or `INBOUND_NORMALIZED` |
 | **Missing databases and schemas are only created if the app has the privilege** | Under the recommended setup (managed access schemas owned by a database role) the app has no `CREATE SCHEMA`, so every schema a template renders must be created first. A missing one fails with "insufficient privileges". See "Creating the location and privileges" |
 | **Names are double-quoted, so case is kept exactly** | Add `| upper` if the user wants normal unquoted SQL (`select * from orders`) to work |
@@ -162,7 +162,7 @@ Check the result against the layout checklist (the guided questions below). Ask 
 One example can fit more than one rule. Where it's ambiguous, ask with `ask_user_question`. For example: "`ORDERS` came from `Orders`. Should names always be uppercased?" or "Is `ANALYTICS` fixed, or should it change per plugin?" In Fork A, ask for or construct examples from more than one plugin or sync, since one example rarely pins down a rule for everything.
 
 ##### 5. Explain where names would clash
-Before the preview, tell the user in plain terms which situations would make two streams land on the same name under their layout. For example, for "schema per plugin, table = stream":
+Before the preview, tell the user in plain language which situations would make two streams land on the same name under their layout. For example, for "schema per plugin, table = stream":
 - A second sync from the same plugin with an overlapping stream (two Jira syncs both produce `OMNATA.JIRA.ISSUES`)
 - The same plugin connected to two accounts or environments
 - Two stream names that only differ by characters the clean-up removes (`Order-Lines` and `Order Lines`)
@@ -336,7 +336,7 @@ In the preview plan, add each one with `"existing": true` and its `INBOUND_STORA
 #### Preview, check, iterate
 
 1. Build a plan JSON listing the syncs to check: their slug, `sync_parameters` and stream names. Put the shared template in the top-level `storage_location`, and any per-sync location in that sync's own `storage_location`. Set `plugin_id` at the top level, or per sync when plugins are mixed. Add existing syncs as described above. If branching is on for the planned syncs, set a top-level `"branches": ["main", "test"]` so every planned sync is also rendered on a hypothetical branch; this proves branches don't collide with main. When writing into a database that already holds objects, add them as `"existing_tables": ["DB.SCHEMA.TABLE", ...]` (exact case, from `INFORMATION_SCHEMA.TABLES`).
-2. Run the preview:
+2. Run the preview. Tell the user first that this runs a local Python script from the skill, which only reads `plan.json` and prints the preview; it doesn't connect to Snowflake or change anything:
    ```bash
    python3 <plugin_dir>/scripts/render_storage_location.py plan.json
    ```
@@ -426,7 +426,7 @@ SHOW FUTURE GRANTS IN SCHEMA <DB>.<SCHEMA>;
 
 ##### Running it
 - Run the statements one at a time, in the order shown: transfer schema ownership first, then add the future ownership grants. Snowflake rejects an ownership transfer while ownership future grants exist in the schema. If it fails for that reason, revoke the future grants, transfer ownership, then grant them again
-- Show the full script and confirm with `ask_user_question` before running. It transfers ownership and grants privileges to the app
+- **Show the full script, explain what each statement does, and confirm with `ask_user_question` before running any of it.** It creates schemas and a database role, transfers schema ownership and grants privileges to the app
 - If the user's current role can create databases (or owns the target database) and can grant to the application, CoCo can run it. Otherwise hand the script to their Snowflake admin and wait until it's done
 - Verify afterwards:
   ```sql

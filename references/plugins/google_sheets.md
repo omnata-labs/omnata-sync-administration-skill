@@ -107,12 +107,14 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Outbound
 
+> **Warning:** `Replace` writes over the target sheet, and with `clear_sheet` (default `true`) clears it first. Confirm the target spreadsheet and sheet with the user before creating or running the sync.
+
 **Target types** (`OUTBOUND_TARGET_TYPE`): Not used.
 
 **Strategies** (`SYNC_STRATEGY_NAME`):
 - `Replace`: writes the full Snowflake dataset into the chosen sheet, optionally clearing it first.
 
-**Sync parameters** (`SYNC_PARAMETERS`): none are marked required in code, but the sync needs a target.
+**Sync parameters** (`SYNC_PARAMETERS`): the sync needs a target spreadsheet and sheet.
 - `shared_with_me`, `search_all_drives`: same listing filters as inbound.
 - `spreadsheet_id`: target spreadsheet. `sheet_name`: target sheet within it (depends on `spreadsheet_id`).
 - `value_input_option`: `RAW` (default) or `USER_ENTERED`.

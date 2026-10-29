@@ -1,6 +1,6 @@
 ---
 name: omnata-configure-connections
-description: "Create an Omnata connection to an app from SQL, as an alternative to the Omnata UI, and hand off to creating a sync on it. Covers API key, token, service account and OAuth connection methods, from BEGIN_CONNECTION_CREATION through to a tested connection, and editing existing connections. Use when: user wants CoCo to set up syncs end to end instead of using the UI; has just installed the Sync Engine or a plugin and wants to get data flowing; wants to sync data from or to an app that has no connection yet; wants to create, set up or add a connection or credentials for a plugin. Triggers: set up a sync end to end, do it without the UI, configure Omnata for me, get my <app> data into Snowflake, sync <app> to Snowflake, push data to <app>, I just installed the plugin, what next after install, first sync, create connection, new connection, set up connection, connect to <app>, add another connection, second connection, separate test connection, add credentials, edit connection, rotate credentials, update connection credentials, re-authorize OAuth, BEGIN_CONNECTION_EDIT, BEGIN_CONNECTION_CREATION, UPDATE_CONNECTION_OBJECTS, COMPLETE_CONNECTION_CREATION, OAuth connection, service account connection, API key connection."
+description: "Create an Omnata connection to an app, with CoCo doing the setup and the user entering credentials in the Omnata UI (recommended) or through SQL, then hand off to creating a sync on it. Covers API key, token, service account and OAuth methods, from BEGIN_CONNECTION_CREATION to a tested connection, and editing existing connections. Use when: user wants CoCo to set up Omnata syncs end to end instead of the UI; has just installed the Sync Engine or a plugin; wants to sync an app that has no Omnata connection yet; wants to create, add or edit an Omnata connection or its credentials. Triggers: set up an Omnata sync end to end, configure Omnata for me, I just installed the Omnata plugin, create Omnata connection, connect Omnata to <app>, add another Omnata connection, edit Omnata connection, rotate Omnata credentials, re-authorize Omnata OAuth, BEGIN_CONNECTION_CREATION, BEGIN_CONNECTION_EDIT, UPDATE_CONNECTION_OBJECTS, COMPLETE_CONNECTION_CREATION."
 ---
 
 # Configure Connections
@@ -22,7 +22,7 @@ Follow these throughout. The steps below say where each one applies.
 - **Tell users where to get each value before asking for it.** Give brief hints with direct console links, any APIs or permissions to enable, and app-side access the connection needs, such as sharing a resource with a service account (Step 1c).
 - **Show links clearly.** Put any link the user has to open, such as an OAuth login, in the reply text as a labelled link plus a copyable code block, never only inside a question (Step 5).
 - **Ask before opening a browser.** Offer "my own browser" or "the agentic browser" (Desktop only). Try to read the result yourself, and fall back to asking the user to copy and paste it (Step 5).
-- **Don't change the user's machine without asking.** Give install, upgrade or uninstall commands for the user to run. Commands that need their machine password go in their own terminal (Step 0).
+- **Ask before changing the user's machine.** Give install, upgrade or uninstall commands for the user to run. Commands that need their machine password go in their own terminal (Step 0).
 - **Stop and ask when something needs a person.** Spec approval by a higher role, logging in to an app, or sharing a resource in the target app: explain what's needed, then wait for them to confirm.
 - **Flag admin approval up front.** Before starting, check CoCo's role and tell the user the connection needs ACCOUNTADMIN to approve its network access (and OAuth integration). Ask how they want to handle it before Step 4 (Step 0).
 - **Check the effect, not just the output.** Confirm each step from the account's state (specifications, connection progress, the connection record) before moving on.
@@ -75,7 +75,7 @@ Then this reference covers: preflight checks, starting the connection, adding cr
 
 If a tool isn't available, don't offer the option that needs it. In Snowsight, that means: sensitive values always use the template, and OAuth login always uses the user's own browser with copy and paste. Check the available tools at run time rather than assuming.
 
-**CoCo runs everything except secrets.** CoCo runs all the lookups (plugin, connection methods and fields, existing connections, specifications, progress) and all the non-sensitive steps (`BEGIN_CONNECTION_CREATION`, spec approval, OAuth start and finish, `COMPLETE_CONNECTION_CREATION`) itself, and reads the results. Don't ask the user to run these or paste results back. Before each call, say in a line what it does.
+**CoCo runs everything except secrets.** CoCo runs all the lookups (plugin, connection methods and fields, existing connections, specifications, progress) and all the non-sensitive steps (`BEGIN_CONNECTION_CREATION`, spec approval, OAuth start and finish, `COMPLETE_CONNECTION_CREATION`) itself, and reads the results. CoCo reads the results itself, so the user doesn't need to run these or paste results back. Before each call, say in a line what it does.
 
 Secrets (API key, token, service account JSON, OAuth client secret) are the user's to enter, by the route they choose below.
 
@@ -92,9 +92,9 @@ Two exceptions, where CoCo hands a step to the user:
 | Situation | Who approves in Step 4 |
 |---|---|
 | The user chose the Omnata UI route for secrets | **The user, in the Omnata UI.** The UI asks for the approval as part of finishing the connection. They need to be ACCOUNTADMIN there, or have their admin do it |
-| The user chose the template for secrets, or otherwise asked that sensitive steps not go through CoCo | **The user.** Assume they want the strict flow: they approve as ACCOUNTADMIN themselves (SQL or Snowsight), even if CoCo is running as ACCOUNTADMIN. Don't ask CoCo-approves as an option |
-| CoCo is running as ACCOUNTADMIN, and the user hasn't asked for the strict flow | Ask with `ask_user_question`: "CoCo approves as ACCOUNTADMIN" or "I'll approve it myself". Never approve without asking |
-| CoCo is running as any other role | **The user, or their admin.** Don't switch roles without asking. Tell them early, so they can line up an admin. If approval by SQL fails for their role, approve in Snowsight or in the Omnata UI |
+| The user chose the template for secrets, or otherwise asked that sensitive steps not go through CoCo | **The user.** Assume they want the strict flow: they approve as ACCOUNTADMIN themselves (SQL or Snowsight), even if CoCo is running as ACCOUNTADMIN. Only offer the option where the user approves |
+| CoCo is running as ACCOUNTADMIN, and the user hasn't asked for the strict flow | Ask with `ask_user_question`: "CoCo approves as ACCOUNTADMIN" or "I'll approve it myself". Always ask before approving |
+| CoCo is running as any other role | **The user, or their admin.** Ask before switching roles. Tell them early, so they can line up an admin. If approval by SQL fails for their role, approve in Snowsight or in the Omnata UI |
 
 The secret question comes before Step 3, which is before Step 4. If the user later picks the Omnata UI route, approval happens in the UI. If they pick the template, switch to the strict flow even if they earlier said CoCo could approve.
 
@@ -127,13 +127,13 @@ To find `<SNOW_CONNECTION>`, run `snow connection list` and pick the one for thi
 
 Use the secure option only if both succeed, and the account and region match what `SELECT CURRENT_ACCOUNT(), CURRENT_REGION()` returns in CoCo's own session. Otherwise tell the user why, and offer the Omnata UI route or the template instead.
 
-**If the check fails, fall back.** Tell the user why, and offer the Omnata UI route (recommended) or the template, which both work everywhere. If they want to set up the CLI, point them to Snowflake's [Snowflake CLI documentation](https://docs.snowflake.com/en/developer-guide/snowflake-cli/index) for installing, upgrading and configuring connections. Don't run installs, upgrades or uninstalls on the user's machine without asking. Two causes specific to this flow:
+**If the check fails, fall back.** Tell the user why, and offer the Omnata UI route (recommended) or the template, which both work everywhere. If they want to set up the CLI, point them to Snowflake's [Snowflake CLI documentation](https://docs.snowflake.com/en/developer-guide/snowflake-cli/index) for installing, upgrading and configuring connections. Ask before running any install, upgrade or uninstall on the user's machine. Two causes specific to this flow:
 - **The CLI is too old for the connection's `authenticator`** (e.g. `oauth_authorization_code`). Login fails with errors such as `Password is empty`. The user needs a current version.
 - **The `snow` connection points at a different account** from CoCo's session. Pick the matching connection, or add one.
 
 **After a SQL option, recommend rotation.** Once the connection works, tell the user that the credential is in query history and that they should rotate it in the source app, then update it with the Omnata UI route (see "Edit an existing connection"). Treat this as the normal next step, not an optional extra.
 
-Never ask the user to paste a secret into the chat. If they do, do not repeat it back, and tell them to rotate it.
+Secrets stay out of the chat: ask for them only through the routes above. If the user pastes one anyway, don't repeat it back, and tell them to rotate it.
 
 ## Step 1: Preflight checks
 
@@ -438,7 +438,7 @@ FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC_RUN
 WHERE SYNC_RUN_ID = <SYNC_RUN_ID>;
 ```
 
-Explain the error in plain terms and check the plugin page's notes for known causes. Then tell the user what to change in the app or the sync, and rerun. A failed first run on a new connection is usually about the data or the sync settings, not the connection.
+Explain the error in plain language, in the user's language, and check the plugin page's notes for known causes. Then tell the user what to change in the app or the sync, and rerun. A failed first run on a new connection is usually about the data or the sync settings, not the connection.
 
 To remove a test sync, `DELETE_SYNC('<sync_slug>', NULL)` deletes the sync record, its raw table and its normalized view in one call, and leaves the connection and other syncs alone. For a full clean-up of syncs and a connection, see "Clean Up Syncs and Connections" in `references/actions.md`.
 

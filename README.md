@@ -1,6 +1,6 @@
 # Omnata Sync Administration Skill
 
-A Cortex Code skill for administering [Omnata Sync Engine](https://omnata.com) — a Snowflake Native Application. Load this skill and ask questions in plain language; CoCo queries your `OMNATA_SYNC_ENGINE.DATA_VIEWS` schema, guides you through diagnosis and remediation, and can take actions on your behalf.
+A Cortex Code skill for administering [Omnata Sync Engine](https://omnata.com) — a Snowflake Native Application. Ask CoCo about your Omnata syncs and connections; it queries your `OMNATA_SYNC_ENGINE.DATA_VIEWS` schema, guides you through diagnosis and remediation, and, once you confirm, makes changes through the Sync Engine's `API` procedures.
 
 **The skill covers:**
 
@@ -16,6 +16,21 @@ A Cortex Code skill for administering [Omnata Sync Engine](https://omnata.com) �
 - **Event table diagnostics** — full stack traces, sync run lifecycle timelines, recurring error detection
 - **Warehouse costs** — credit attribution per sync, dollar estimates, schedule optimisation recommendations
 - **Support handoff** — status page checks, support ticket assembly for Omnata
+
+### What this skill can change
+
+Besides reading data, the skill can make changes in your Snowflake account and in connected apps. Before any of these, CoCo lists what will be affected and asks you to confirm:
+- **Deletes** syncs, branches or connections, permanently. Deleting a sync also deletes its inbound tables and views
+- **Runs syncs and full refreshes**, which use warehouse credits and the source app's API rate limits
+- **Configures outbound syncs that change data in other apps**: Replace, Delete or Mirror strategies, and actions such as Jira `DELETE_ISSUES`, overwrite or delete records in the destination. Outbound syncs also send Snowflake data to third-party services
+- **Creates connections using credentials you supply** (API keys, tokens, service account keys, OAuth). CoCo recommends entering secrets in the Omnata UI, where they stay out of query history. It never asks you to paste a secret into the chat
+- **Creates schemas and database roles**, transfers schema ownership and grants privileges for inbound storage locations
+- **Runs a local Python script** that previews storage locations from a plan file
+- **Fetches the public Snowflake and Omnata status pages** when preparing a support request
+
+## Licence
+
+Copyright 2026 Omnata. Licensed under the Apache License 2.0. See [LICENSE](LICENSE).
 
 ---
 
