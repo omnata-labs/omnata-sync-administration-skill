@@ -155,7 +155,7 @@ Each plugin defines one or more connection methods. Each method has a name, a se
 CALL <PLUGIN_DATABASE>.PLUGIN.CONNECTION_FORM();
 ```
 
-It returns `{"success": true, "data": [<method>, ...]}`. For each method, use:
+It returns an OBJECT with `success` = `true` and `data` holding an array of methods. For each method, use:
 
 | Key | Meaning |
 |---|---|
@@ -201,7 +201,7 @@ CALL OMNATA_SYNC_ENGINE.API.BEGIN_CONNECTION_CREATION(
 
 Parameters are positional, in the order shown.
 
-On success it returns `{"success": true, "data": {...}}`. Keep these values from `data`:
+On success it returns an OBJECT with `success` = `true` and a `data` object. Keep these values from `data`:
 
 | Field | Used in |
 |---|---|
@@ -211,7 +211,7 @@ On success it returns `{"success": true, "data": {...}}`. Keep these values from
 | `SI_SPEC_NAME` | Approving the OAuth integration (OAuth only) |
 | `OAUTH_SECRET_NAME` | OAuth authorization (OAuth only) |
 
-On failure it returns `{"success": false, "error": "..."}`. A common one is `Connection with slug <slug> already exists`: pick a different slug, or edit the existing connection (see "Edit an existing connection" below).
+On failure it returns an OBJECT with `success` = `false` and an `error` message. A common one is `Connection with slug <slug> already exists`: pick a different slug, or edit the existing connection (see "Edit an existing connection" below).
 
 ## Step 3: Add connection parameters and credentials
 
@@ -242,7 +242,7 @@ Only after the user has accepted the query-history risk (Step 0).
 `UPDATE_CONNECTION_OBJECTS` sends the method's field values to the plugin. The plugin uses them to work out the network addresses it needs and stores secrets in a Snowflake secret it owns.
 
 Shape of each object:
-- `connection_parameters`: non-secret fields, `{"<field>": {"value": "<value>"}}`.
+- `connection_parameters`: non-secret fields, an object keyed by field name, where each value is an object with a `value` key, e.g. `OBJECT_CONSTRUCT('<field>', OBJECT_CONSTRUCT('value', '<value>'))`.
 - `connection_secrets`: fields marked secret, same shape.
 - `oauth_values`: OAuth methods only (see Step 3b). Otherwise pass an empty object.
 
@@ -496,4 +496,4 @@ To abandon an edit, use `CANCEL_CONNECTION_CREATION('<CONNECTION_SLUG>')`. The e
 ## Notes
 
 - Everything here runs through the Sync Engine's API procedures (`OMNATA_SYNC_ENGINE.API`), which run as the app. CoCo never creates network rules, integrations or secrets directly; the plugin owns those.
-- All procedures return `{"success": ..., "data" | "error": ...}` instead of throwing. Always check `success`.
+- All procedures return an OBJECT with `success`, plus `data` on success or `error` on failure, instead of throwing. Always check `success`.

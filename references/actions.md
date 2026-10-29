@@ -128,7 +128,7 @@ CALL OMNATA_SYNC_ENGINE.API.DELETE_SYNC(
 );
 ```
 
-Returns `{"success": true, "data": {"deleted": true}}`. One call removes:
+Returns an OBJECT with `success` = `true` and `data.deleted` = `true`. One call removes:
 - the sync record and its configuration
 - its raw tables in `OMNATA_SYNC_ENGINE.INBOUND_RAW` (inbound)
 - its normalized views in `OMNATA_SYNC_ENGINE.INBOUND_NORMALIZED` (inbound)
@@ -219,8 +219,8 @@ CALL OMNATA_SYNC_ENGINE.API.RECREATE_INBOUND_NORMALIZED_VIEWS(
 > `RECREATE_INBOUND_NORMALIZED_VIEWS` when fixing stale schema or missing columns.
 > Refreshing schemas without recreating views leaves the views with old column definitions.
 
-> **Warning:** Recreating views drops and recreates them. Any grants on the views
-> (e.g. `SELECT` for downstream roles) must be re-applied after recreation.
+> **Warning:** Recreating views drops and rebuilds them, so queries running against them
+> at that moment fail. Grants made on the views are kept, because the app recreates them with `copy grants`.
 
 ---
 
@@ -484,7 +484,7 @@ LANGUAGE SQL
 EXECUTE AS OWNER
 AS
 BEGIN
-  IF (:RESULT:sync_slug::VARCHAR <> 'contacts-to-salesforce') THEN
+  IF (:RESULT:sync_slug::VARCHAR != '<sync_slug>') THEN
     RETURN 'skipped';
   END IF;
   INSERT INTO MY_DB.OPS.SYNC_HOOK_LOG (PAYLOAD) SELECT :RESULT;
