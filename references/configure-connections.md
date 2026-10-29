@@ -5,7 +5,7 @@ description: "Create an Omnata connection to an app from SQL, as an alternative 
 
 # Configure Connections
 
-Create an Omnata connection with SQL, step by step. The user can always use the Omnata UI instead. This reference is for when they want CoCo to drive it.
+Create an Omnata connection with SQL, step by step. The user can always use the Omnata UI instead. This reference is for when they want CoCo to drive it. CoCo does the lookups and setup; by default the user enters credentials in the Omnata UI, so they stay out of query history.
 
 If any step behaves differently from what's described here, stop, tell the user what happened, and offer to finish the connection in the Omnata UI.
 
@@ -16,8 +16,9 @@ If any step behaves differently from what's described here, stop, tell the user 
 Follow these throughout. The steps below say where each one applies.
 
 - **Know where CoCo is running.** Check whether this is CoCo Desktop or CoCo in Snowsight from the tools available, and only offer options that environment supports (Step 0).
-- **CoCo does the work; the user only handles secrets.** CoCo runs all lookups and every non-sensitive step itself. The user only runs SQL when it carries a secret, and only if they choose the template (Step 0). Before running each call, say what it does.
-- **Keep secrets out of the chat.** Default to the placeholder template. Offer the secure handoff only when it's available (Step 0). Never ask for a secret in the chat. If one is pasted, don't repeat it, and suggest rotating it. Don't repeat OAuth codes back either.
+- **CoCo does the work; the user only handles secrets.** CoCo runs all lookups and every non-sensitive step itself. Before running each call, say what it does.
+- **Recommend entering secrets in the Omnata UI.** When a secret is needed, recommend that the user enters it in the Omnata UI, where it never appears in query history. Entering it through SQL is allowed, but only after CoCo has explained the risk and the user has explicitly chosen it (Step 0).
+- **Keep secrets out of the chat.** Never ask for a secret in the chat. If one is pasted, don't repeat it, and tell the user to rotate it. Don't repeat OAuth codes back either.
 - **Tell users where to get each value before asking for it.** Give brief hints with direct console links, any APIs or permissions to enable, and app-side access the connection needs, such as sharing a resource with a service account (Step 1c).
 - **Show links clearly.** Put any link the user has to open, such as an OAuth login, in the reply text as a labelled link plus a copyable code block, never only inside a question (Step 5).
 - **Ask before opening a browser.** Offer "my own browser" or "the agentic browser" (Desktop only). Try to read the result yourself, and fall back to asking the user to copy and paste it (Step 5).
@@ -76,7 +77,7 @@ If a tool isn't available, don't offer the option that needs it. In Snowsight, t
 
 **CoCo runs everything except secrets.** CoCo runs all the lookups (plugin, connection methods and fields, existing connections, specifications, progress) and all the non-sensitive steps (`BEGIN_CONNECTION_CREATION`, spec approval, OAuth start and finish, `COMPLETE_CONNECTION_CREATION`) itself, and reads the results. Don't ask the user to run these or paste results back. Before each call, say in a line what it does.
 
-The user only runs SQL when a step carries a secret (API key, token, service account JSON, OAuth client secret), and only if they choose the template below.
+Secrets (API key, token, service account JSON, OAuth client secret) are the user's to enter, by the route they choose below.
 
 Two exceptions, where CoCo hands a step to the user:
 - **Privileges.** If a step fails because CoCo's role can't do it (e.g. approving specifications), give the user the SQL to run as a role that can, or the Snowsight steps. Then CoCo checks the result itself.
@@ -90,22 +91,32 @@ Two exceptions, where CoCo hands a step to the user:
 
 | Situation | Who approves in Step 4 |
 |---|---|
+| The user chose the Omnata UI route for secrets | **The user, in the Omnata UI.** The UI asks for the approval as part of finishing the connection. They need to be ACCOUNTADMIN there, or have their admin do it |
 | The user chose the template for secrets, or otherwise asked that sensitive steps not go through CoCo | **The user.** Assume they want the strict flow: they approve as ACCOUNTADMIN themselves (SQL or Snowsight), even if CoCo is running as ACCOUNTADMIN. Don't ask CoCo-approves as an option |
 | CoCo is running as ACCOUNTADMIN, and the user hasn't asked for the strict flow | Ask with `ask_user_question`: "CoCo approves as ACCOUNTADMIN" or "I'll approve it myself". Never approve without asking |
 | CoCo is running as any other role | **The user, or their admin.** Don't switch roles without asking. Tell them early, so they can line up an admin. If approval by SQL fails for their role, approve in Snowsight or in the Omnata UI |
 
-The secret question comes before Step 3, which is before Step 4. If the user later picks the template, switch to the strict flow even if they earlier said CoCo could approve.
+The secret question comes before Step 3, which is before Step 4. If the user later picks the Omnata UI route, approval happens in the UI. If they pick the template, switch to the strict flow even if they earlier said CoCo could approve.
 
-**How sensitive values are handled.** Ask with `ask_user_question` at each step that needs a secret, not up front.
+**How sensitive values are handled.** Ask once, when the first secret is needed (before Step 3), not up front.
+
+**Explain the risk before asking.** Tell the user, in the reply text before the question:
+- **Omnata UI (recommended):** the secret is entered in the Omnata app and passed to the plugin inside the app. It doesn't appear in the account's query history.
+- **Through SQL:** `UPDATE_CONNECTION_OBJECTS` receives secrets as a plain argument, so the value is recorded in the SQL text in Snowflake query history. Query history is kept for up to a year in `SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY`, and anyone with a role that can read query history can see it. This applies to both SQL options below. If they choose it, they should rotate the credential once the connection works.
+
+Then ask with `ask_user_question`, with the recommended option first:
 
 | Option | How it works |
 |---|---|
-| Template with placeholders (default) | CoCo writes the SQL with placeholders such as `<API_KEY>`. The user fills them in and runs it in a Snowsight worksheet, then says when it's done. CoCo checks the effect itself (Step 3). CoCo never sees the value. Works for everyone |
-| Provide it securely to CoCo | The user stores the value locally with `cortex secret store <key> --prompt` (or `--from-file <path>`). CoCo runs the call through the `snow` CLI with the value injected as an environment variable. The value never appears in the chat or in tool parameters. Only offered in CoCo Desktop, and only if the CLI check below passes |
+| **Enter it in the Omnata UI (recommended)** | CoCo starts the connection (Step 2). The user opens it in the Omnata UI, enters the credentials and finishes it there (Step 3, Omnata UI route). CoCo then checks the connection and carries on to the sync. Works everywhere |
+| Template with placeholders, run by the user | CoCo writes the SQL with placeholders such as `<API_KEY>`. The user fills them in and runs it in a Snowsight worksheet. CoCo never sees the value, but **it is recorded in query history** |
+| Provide it securely to CoCo | The user stores the value locally with `cortex secret store <key> --prompt` (or `--from-file <path>`). CoCo runs the call through the `snow` CLI with the value injected as an environment variable. It never appears in the chat or in tool parameters, but **it is recorded in query history**. Only offered in CoCo Desktop. If chosen, run the CLI check below first, and fall back to the other options if it fails |
+
+If the user picks a SQL option, confirm once more that they accept the query-history risk before running or handing over any SQL with a secret in it.
 
 **Why the secure option needs the `snow` CLI.** CoCo's built-in SQL tool can't receive stored secrets. Only shell commands can, through `cortex secret run`. So the value has to reach Snowflake through a local client, the `snow` CLI. Many CoCo Desktop users won't have it set up.
 
-**CLI check, run before offering the secure option.** Run these with the bash tool:
+**CLI check, run only once the user has chosen this option.** Run these with the bash tool:
 
 ```bash
 snow --version
@@ -114,15 +125,15 @@ snow sql -c <SNOW_CONNECTION> --format JSON -q "SELECT CURRENT_ACCOUNT(), CURREN
 
 To find `<SNOW_CONNECTION>`, run `snow connection list` and pick the one for this account. Don't print `connections.toml`, since it can hold passwords. If the connection uses browser-based login, tell the user that a Snowflake login page may open in their browser during the check and later secure-path calls, and that they need to approve it.
 
-Offer the secure option only if both succeed, and the account and region match what `SELECT CURRENT_ACCOUNT(), CURRENT_REGION()` returns in CoCo's own session. Otherwise offer only the template, and tell the user why.
+Use the secure option only if both succeed, and the account and region match what `SELECT CURRENT_ACCOUNT(), CURRENT_REGION()` returns in CoCo's own session. Otherwise tell the user why, and offer the Omnata UI route or the template instead.
 
-**If the check fails, fall back to the template.** Tell the user why, and offer the template path, which works everywhere. If they want to set up the CLI, point them to Snowflake's [Snowflake CLI documentation](https://docs.snowflake.com/en/developer-guide/snowflake-cli/index) for installing, upgrading and configuring connections. Don't run installs, upgrades or uninstalls on the user's machine without asking. Two causes specific to this flow:
+**If the check fails, fall back.** Tell the user why, and offer the Omnata UI route (recommended) or the template, which both work everywhere. If they want to set up the CLI, point them to Snowflake's [Snowflake CLI documentation](https://docs.snowflake.com/en/developer-guide/snowflake-cli/index) for installing, upgrading and configuring connections. Don't run installs, upgrades or uninstalls on the user's machine without asking. Two causes specific to this flow:
 - **The CLI is too old for the connection's `authenticator`** (e.g. `oauth_authorization_code`). Login fails with errors such as `Password is empty`. The user needs a current version.
 - **The `snow` connection points at a different account** from CoCo's session. Pick the matching connection, or add one.
 
-Tell the user before they choose: **in both cases, Snowflake query history will contain the value**, because `UPDATE_CONNECTION_OBJECTS` receives secrets as a plain argument. If that matters, run the step in a session whose query history is restricted, or rotate the credential after setup.
+**After a SQL option, recommend rotation.** Once the connection works, tell the user that the credential is in query history and that they should rotate it in the source app, then update it with the Omnata UI route (see "Edit an existing connection"). Treat this as the normal next step, not an optional extra.
 
-Never ask the user to paste a secret into the chat. If they do, do not repeat it back, and suggest they rotate it.
+Never ask the user to paste a secret into the chat. If they do, do not repeat it back, and tell them to rotate it.
 
 ## Step 1: Preflight checks
 
@@ -204,6 +215,24 @@ On failure it returns `{"success": false, "error": "..."}`. A common one is `Con
 
 ## Step 3: Add connection parameters and credentials
 
+Follow the route the user chose in Step 0.
+
+### Omnata UI route (recommended)
+
+The user enters every field (including non-secret ones) and finishes the connection in the Omnata UI. CoCo doesn't call `UPDATE_CONNECTION_OBJECTS`.
+
+1. After Step 2, tell the user what to do, as numbered steps:
+   1. Open the Omnata Sync Engine app in Snowsight.
+   2. Go to the **<App>** plugin's page. The connection **<CONNECTION_NAME>** is listed there as in progress.
+   3. Open it, enter the credentials (with the hints from Step 1c), approve network access when asked (ACCOUNTADMIN, or their admin), complete any OAuth login, and finish.
+   4. Tell CoCo when it's done.
+2. Wait for the user. Don't poll in a loop.
+3. Check the result yourself with the Step 6 "Confirm" query. The connection keeps the name, slug, method and production flag from Step 2. If the row is there, the connection is complete and its test passed in the UI, so skip Steps 4 to 6 and go to Step 7.
+4. If there's no row, ask the user what they saw. If the UI showed an error, help with it using the plugin page and the troubleshooting table. If the in-progress connection wasn't listed, offer to cancel it and start the connection again in the UI.
+
+### SQL routes (template or secure)
+
+Only after the user has accepted the query-history risk (Step 0).
 `UPDATE_CONNECTION_OBJECTS` sends the method's field values to the plugin. The plugin uses them to work out the network addresses it needs and stores secrets in a Snowflake secret it owns.
 
 Shape of each object:
@@ -213,7 +242,7 @@ Shape of each object:
 
 ### 3a. Non-OAuth methods (API key, token, service account)
 
-Ask the Step 0 secret question, then use one of these.
+Use the option the user chose in Step 0.
 
 **Template with placeholders.** CoCo builds this from the method's fields (Step 1b) and gives it to the user to fill in and run in a Snowsight worksheet:
 
@@ -252,7 +281,7 @@ Repeat key/value pairs inside each `OBJECT_CONSTRUCT` for more fields; use `OBJE
    - **Wrap the substituted value in `$$...$$`.** Multi-line JSON with newlines, escaped quotes and apostrophes arrived byte-for-byte (verified by SHA-256 on both sides). Also use `$$...$$` for the other string literals in the `-q` text, so the shell's single quotes stay balanced.
    - `cortex secret run` drops a single trailing newline from file-stored values. That's harmless for JSON keys and tokens.
    - **Validate the stored value without revealing it** before sending: print its length, and for structured values check the expected shape (e.g. a JSON key parses and has its expected keys). Non-secret parts, such as a service account email, can be shown to the user.
-4. After the connection is complete, offer `cortex secret delete <key>`.
+4. After the connection is complete, offer `cortex secret delete <key>`, and recommend rotating the credential (Step 0).
 
 Template path: when the user says they've run it, check the effect yourself (the spec check below) rather than asking for the output. Secure path: check the result for `"success": true`.
 
@@ -264,7 +293,7 @@ For OAuth, `connection_secrets` is usually empty and the credentials go in `oaut
 |---|---|
 | `oauth_grant` | From the plugin's OAuth template: `authorization_code` or `client_credentials` |
 | `oauth_client_id` | User, from their OAuth app in the target app's developer console |
-| `oauth_client_secret` | User. **Sensitive**, use the Step 0 secret question |
+| `oauth_client_secret` | User. **Sensitive**: entered by the route chosen in Step 0 |
 | `oauth_token_endpoint` | From the plugin's OAuth template |
 | `oauth_authorization_endpoint` | From the template (authorization code only) |
 | `oauth_allowed_scopes` | From the template, as an array |
@@ -412,6 +441,8 @@ To remove a test sync, `DELETE_SYNC('<sync_slug>', NULL)` deletes the sync recor
 Use this to rotate credentials, change connection parameters, rename a connection, change its production flag, or re-authorize OAuth. The connection keeps its ID and slug, so its syncs carry on using it.
 
 The edit follows the same steps as creating a connection, with `BEGIN_CONNECTION_EDIT` instead of `BEGIN_CONNECTION_CREATION`. All of Step 0 applies: CoCo does the lookups, the user handles secrets, and the admin approval check comes up front.
+
+**For credential changes, recommend editing the connection in the Omnata UI** (open the connection on the plugin's page and edit it there). That keeps the new credential out of query history, which matters most when rotating a credential that leaked. Use the SQL edit below for changes without secrets (name, production flag, non-secret parameters), or for secrets if the user accepts the query-history risk.
 
 1. **Find the connection** in `DATA_VIEWS.CONNECTION` (its `CONNECTION_ID`, name, slug, method and production flag), and confirm with the user what they want to change.
 2. **Start the edit:**

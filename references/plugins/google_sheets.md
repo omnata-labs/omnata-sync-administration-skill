@@ -27,7 +27,7 @@ Follow `configure-connections.md`. Google Sheets specifics:
 
 **App-side access (Service Account):** share each Google Sheet with the service account's email (`client_email` in the key, ends in `.iam.gserviceaccount.com`), as Viewer for inbound or Editor for outbound. Without this the sync can't see the sheet.
 
-**Service Account credentials:**
+**Service Account credentials:** the JSON key file contains a private key. Recommend entering it in the Omnata UI (the Omnata UI route in `configure-connections.md`), where it stays out of query history. Tested on this plugin: a connection started with `BEGIN_CONNECTION_CREATION` can be finished on the Google Sheets page of the Omnata UI. Only use the SQL below if the user has accepted that the key will be recorded in query history, and recommend rotating the key afterwards.
 
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.UPDATE_CONNECTION_OBJECTS(
