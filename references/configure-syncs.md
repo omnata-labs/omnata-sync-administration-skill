@@ -340,7 +340,7 @@ sync's `OUTBOUND_FIELD_MAPPINGS` for the exact structure.
 
 Create or update inbound syncs programmatically using `CONFIGURE_OMNATA_INBOUND_SYNC`. This procedure is the single entry point for all inbound sync configuration, whether creating a simple sync, bulk-adding streams, or managing test/prod environments.
 
-The procedure is **idempotent**: calling it with an existing `SYNC_SLUG` updates the sync rather than creating a duplicate. It expects the **full configuration** each time. Omitting a stream from `STREAM_NAMES` removes it from the sync.
+The procedure is **idempotent**: calling it with an existing `SYNC_SLUG` updates the sync rather than creating a duplicate. It expects the **full configuration** each time. Omitting a stream from `STREAM_NAMES` removes it from the sync. When updating an existing sync, show the user which streams are kept and which would be removed, and confirm before calling.
 
 ## Use cases
 
@@ -587,7 +587,7 @@ If the run failed, explain the per-stream or global error, check the plugin page
 
 ## Deleting a sync
 
-To remove a sync (for example a test sync), use `DELETE_SYNC('<sync_slug>', NULL)`. It also removes the sync's raw tables and normalized views. See "Delete a Sync" and "Clean Up Syncs and Connections" in `references/actions.md`.
+To remove a sync (for example a test sync), use `DELETE_SYNC('<sync_slug>', NULL)`. **It is irreversible and also deletes the sync's raw tables and normalized views**, so confirm the slug with the user and that the data isn't needed before calling it. See "Delete a Sync" and "Clean Up Syncs and Connections" in `references/actions.md`.
 
 ## Inbound notes
 

@@ -36,7 +36,7 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 **Target types** (`OUTBOUND_TARGET_TYPE`): Not used.
 
 **Strategies** (`SYNC_STRATEGY_NAME`):
-- `Create`: creates new records. Upsert and Mirror are commented out in the manifest.
+- `Create`: creates new records. Upsert and Mirror are not supported.
 
 **Sync parameters** (`SYNC_PARAMETERS`):
 - `tenant` (required): single tenant to write to.
@@ -55,5 +55,5 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 ## Sources
 
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/xero/README.md`
-- Conflict: docs list Payroll and Projects ("Coming Soon"); code `fetch_api_sets` offers only `accounting` and `assets` (projects commented out, payroll absent).
+- Conflict: docs list Payroll and Projects ("Coming Soon"); the plugin offers only `accounting` and `assets`.
 - Not verified: exact stored format for multi-select `tenants`; full stream name list.

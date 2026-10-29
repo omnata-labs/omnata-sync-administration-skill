@@ -241,11 +241,11 @@ This surfaces the Snowflake infrastructure object names (`EXTERNAL_ACCESS_INTEGR
 
 > **Warning:** The procedures in this step are **undocumented** in the official Omnata gitbook. Only suggest these when the user explicitly needs to perform these operations. For full signatures, version notes, and guidance on all Omnata stored procedures, see `references/actions.md`.
 
-> **Scope:** These procedures only **delete connections** or **change metadata flags** on existing connections. To create a connection, use `references/configure-connections.md`. To edit credentials or re-authenticate an existing connection, see "Edit an existing connection" in the same reference.
+> **Scope:** These procedures **delete a connection** (`DELETE_CONNECTION`), **change its production flag** (`SET_CONNECTION_ENVIRONMENT`) and **move a sync to a different connection** (`SET_SYNC_CONNECTION`, in `references/actions.md`). Each changes the account, so confirm with the user first. To create a connection, use `references/configure-connections.md`. To edit credentials or re-authenticate an existing connection, see "Edit an existing connection" in the same reference.
 
 #### Delete a Connection
 
-Permanently deletes a connection. **Fails if any syncs still reference it** — confirm `TOTAL_SYNCS = 0` from Step 1 first.
+Permanently deletes a connection. **Irreversible.** It fails if any syncs still reference it, so confirm `TOTAL_SYNCS = 0` from Step 1 first. Show the user the connection's name and ID, and wait for their confirmation before calling it.
 
 ```sql
 -- ⚠️ UNDOCUMENTED. Irreversible.

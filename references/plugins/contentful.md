@@ -48,4 +48,4 @@ The example assumes a Content Management API connection. For a Content Delivery 
 ## Sources
 
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/contentful/README.md`
-- Docs list only 8 streams and only describe CMA tokens. Code also has `entries_published` / `assets_published` and the Content Delivery API method; code wins.
+- Docs list only 8 streams and only describe CMA tokens. The plugin also has `entries_published` / `assets_published` and the Content Delivery API method.

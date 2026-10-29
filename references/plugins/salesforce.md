@@ -35,6 +35,8 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Outbound
 
+> **Warning:** `Delete` removes records in Salesforce, and `Mirror` overwrites them to match Snowflake, including removing values. Neither can be undone without a backup. Confirm the object and strategy with the user before creating or running the sync.
+
 **Target types** (`OUTBOUND_TARGET_TYPE`):
 - `Standard Object Records`: Create, Upsert, Update, Mirror, Delete.
 - `Custom Object Records`: Create, Upsert, Update, Mirror, Delete.

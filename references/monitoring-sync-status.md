@@ -1,6 +1,6 @@
 ---
 name: omnata-monitoring-sync-status
-description: "Check health and status of all Omnata Sync Engine syncs. Use when: user asks about Omnata sync status, sync health, failed syncs, sync errors, sync run history, or sync engine overview. Triggers: omnata sync status, omnata health, sync failures, sync errors, omnata sync engine status, omnata sync runs."
+description: "Check health and status of all Omnata Sync Engine syncs, check whether the sync warehouse was over capacity during a run, and offer to re-run failed syncs (with confirmation). Use when: user asks about Omnata sync status, sync health, failed syncs, sync errors, sync run history, or sync engine overview. Triggers: omnata sync status, omnata health, sync failures, sync errors, omnata sync engine status, omnata sync runs."
 ---
 
 # Omnata Sync Status
@@ -170,7 +170,7 @@ Changing warehouses or schedules affects other workloads, so confirm with the us
 | Auth / token expired | `GLOBAL_ERROR` contains "unauthorized", "token expired", "invalid session", "access token invalid", or HTTP 401 | Re-authenticate the connection in the Omnata UI |
 | Permission denied | `GLOBAL_ERROR` contains "forbidden", "insufficient access", "not permitted", or HTTP 403 | Fix permissions in the destination app |
 | Data validation errors | `OUT_DEST_FAIL > 0` AND `GLOBAL_ERROR` or error pattern references field validation, required fields, or HTTP 422 | Fix field mapping or source data values |
-| Sync is paused | `RUN_STATE = 'PAUSED'` | Use `CALL OMNATA_SYNC_ENGINE.API.RESUME_SYNC('<sync_slug>', 'main')` first |
+| Sync is paused | `RUN_STATE = 'PAUSED'` | Ask the user why it was paused first; it may have been paused on purpose. Resume only if they confirm: `CALL OMNATA_SYNC_ENGINE.API.RESUME_SYNC('<sync_slug>', 'main')` |
 
 For these cases, explain what needs fixing and route to the appropriate remediation in `error-knowledge-base.md`. Do not offer a re-run.
 
@@ -214,7 +214,7 @@ Working from the most recent run backward, count how many consecutive runs have 
 
 **Ask the user before triggering.** Present the re-runnable syncs and ask which (if any) they'd like to trigger. Do not trigger automatically.
 
-**Execute the re-run** (for full parameter reference, see `references/actions.md` — Sync Lifecycle):
+**Execute the re-run** (for full parameter reference, see `references/actions.md` — Sync Lifecycle). A run uses warehouse credits and the source app's API rate limits, and outbound runs write to the destination app. Only run it after the user agrees:
 
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.RUN_SYNC(

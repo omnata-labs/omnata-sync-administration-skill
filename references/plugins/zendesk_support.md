@@ -54,4 +54,4 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 ## Sources
 
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/zendesk_support/README.md`
-- Not verified: whether `zendesk_object` and `update_field` are required. The effect of `max_concurrent_queries_per_stream` could not be confirmed. Cursor fields are not declared, so incremental streams may need `STREAM_CURSOR_FIELDS` or rely on plugin-internal state; not verified.
+- Not verified: whether `zendesk_object` and `update_field` are required. The effect of `max_concurrent_queries_per_stream` could not be confirmed. The plugin defines no default cursor fields, so incremental streams may need `STREAM_CURSOR_FIELDS` or rely on plugin-internal state; not verified.

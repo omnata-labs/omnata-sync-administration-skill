@@ -12,7 +12,7 @@
 **Sync parameters** (`SYNC_PARAMETERS`):
 - `workspaces` (required, multi-select): Clockify workspace IDs to retrieve data for. Options come from the `/workspaces` endpoint (value is the workspace `id`).
 
-**Streams**: Static list defined in code (does not depend on sync parameters). Representative streams: `workspaces`, `users`, `projects`, `clients`, `tags`, `time_entries`, `approval_requests`, `assignments`, `expenses`, `invoices`. Several child streams depend on a parent and are populated from it (for example `user_settings` and `user_memberships` from `users`, `tasks` and `project_memberships` from `projects`, `time_entry_custom_field_values` from `time_entries`). All streams have a source-defined primary key (mostly `workspaceId` + `id`).
+**Streams**: Static list (does not depend on sync parameters). Representative streams: `workspaces`, `users`, `projects`, `clients`, `tags`, `time_entries`, `approval_requests`, `assignments`, `expenses`, `invoices`. Several child streams depend on a parent and are populated from it (for example `user_settings` and `user_memberships` from `users`, `tasks` and `project_memberships` from `projects`, `time_entry_custom_field_values` from `time_entries`). All streams have a source-defined primary key (mostly `workspaceId` + `id`).
 
 **Sync strategies supported**: `time_entries`, `approval_requests` and `assignments` (and children that inherit from them) support `Incremental` and `Full Refresh` with source-defined cursors. All other streams are `Full Refresh` only.
 

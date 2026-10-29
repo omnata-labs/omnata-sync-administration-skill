@@ -37,6 +37,8 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Outbound
 
+> **Warning:** outbound syncs create and change records in Zoho CRM. The `DELETE_RECORDS` function (Notes) moves records to the Zoho recycle bin. Confirm with the user before running either.
+
 **Target types** (`OUTBOUND_TARGET_TYPE`): Not used.
 
 **Strategies** (`SYNC_STRATEGY_NAME`):
@@ -59,7 +61,7 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 - Consumer UDTFs in the plugin app's `UDFS` schema, each taking a connection object first (`<plugin_app>.PLUGIN.PLUGIN_CONNECTION('<connection_slug>')`):
   - `CREATE_RECORDS(CONNECTION_PARAMETERS OBJECT, MODULE_NAME VARCHAR, RECORDS ARRAY)` returns `ID, STATUS, RESULT`; records are objects keyed on field API name.
   - `SEARCH_RECORDS(CONNECTION_PARAMETERS OBJECT, MODULE_NAME VARCHAR, CRITERIA VARCHAR)` returns `ID, RECORD`; criteria like `(Last_Name:equals:Smith)`.
-  - `DELETE_RECORDS(CONNECTION_PARAMETERS OBJECT, MODULE_NAME VARCHAR, RECORD_IDS ARRAY)` returns `ID, STATUS, RESULT`; records go to the Zoho recycle bin.
+  - `DELETE_RECORDS(CONNECTION_PARAMETERS OBJECT, MODULE_NAME VARCHAR, RECORD_IDS ARRAY)` returns `ID, STATUS, RESULT`; records go to the Zoho recycle bin. Before running it, show the user the module, record IDs and count, and wait for their confirmation.
   - Example: `SELECT ID, STATUS FROM TABLE(<plugin_app>.UDFS.CREATE_RECORDS(<plugin_app>.PLUGIN.PLUGIN_CONNECTION('<connection_slug>'), 'Leads', PARSE_JSON('[{"Last_Name":"<name>"}]')::ARRAY));` `STATUS` is `success` per successful record.
 
 ## Sources

@@ -36,6 +36,8 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Outbound
 
+> **Warning:** `Replace` clears the worksheet's existing contents before writing. Confirm the target workbook and worksheet with the user before creating or running the sync.
+
 **Target types** (`OUTBOUND_TARGET_TYPE`): Not used.
 
 **Strategies** (`SYNC_STRATEGY_NAME`):

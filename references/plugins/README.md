@@ -24,12 +24,12 @@ Outbound rule: outbound syncs can only be created from the definition of an exis
 | `dynamics_365_synapse_link.md` | Microsoft Dynamics 365 Synapse Link | Yes | None |
 | `entra_id.md` | Microsoft Entra ID | Yes | None |
 | `github.md` | GitHub | Yes | None |
-| `google_ads.md` | Google Ads | Yes | Declared (Create, Upsert) but not implemented |
+| `google_ads.md` | Google Ads | Yes | Not supported |
 | `google_sheets.md` | Google Sheets | Yes | Replace |
 | `hubspot.md` | Hubspot | Yes | Create, Upsert, Update, Delete |
 | `infor_datalake.md` | Infor Datalake | Yes | None |
 | `jira.md` | Jira | Yes | Create, Upsert |
-| `linkedin_ads.md` | LinkedIn Ads | Yes | None (conversion events commented out) |
+| `linkedin_ads.md` | LinkedIn Ads | Yes | Not supported |
 | `mailgun.md` | Mailgun | Yes | Send |
 | `marketo.md` | Marketo | No | Upsert, Update, Create |
 | `meta_marketing.md` | Meta Marketing | Yes | None |
@@ -37,7 +37,7 @@ Outbound rule: outbound syncs can only be created from the definition of an exis
 | `monday.md` | Monday.com | Yes | Create, Upsert, Mirror |
 | `ms_excel.md` | MS Excel | Yes | Replace |
 | `mssql.md` | Microsoft SQL Server | Yes | None |
-| `mysql.md` | MySQL | Yes | None (commented out) |
+| `mysql.md` | MySQL | Yes | Not supported |
 | `netsuite.md` | NetSuite | Yes | None |
 | `notion.md` | Notion | Yes | None |
 | `paypal_braintree.md` | PayPal Braintree | Yes | None |
@@ -68,13 +68,10 @@ Stub pages only: `amazon-ads.md`, `azure-consumption.md`, `dynamics-365-ce.md`, 
 - **Plugin FQNs are derived, not confirmed.** Each is computed from `developer_id` and `plugin_id`. Several plugins use non-Omnata developer IDs (`MONITORIAL__MSSQL`, `MONITORIAL__POSTGRESQL`, `DATA_ENGINEERS__MONDAY`, `DATA_ENGINEERS__ENTRA_ID`, `OMNATA_LABS__PAYPAL_BRAINTREE`). Check them against `PLUGIN_FQN` in a live `DATA_VIEWS.CONNECTION`.
 - **Multi-select and dropdown value formats are unconfirmed** for parameters such as `ad_accounts` (LinkedIn, Meta, Reddit), `workspaces` (Clockify), `companies` (Business Central), `schema` (MSSQL, Databricks), `workspace` (Typeform) and `profile_id` (Wise). The examples use the terse value form. Confirm against a UI-created sync's `SYNC_PARAMETERS`.
 - **Docs conflicts to fix in the docs repo:**
-  - Slack docs say `Create`, but the code registers `Post Message`.
-  - Airtable docs say Incremental is supported, but the code is Full Refresh only.
-  - SFMC and Google Sheets docs say Full Refresh only, but the code allows Incremental in some cases.
-  - Contentful code has more streams, and a Content Delivery API method, than the docs list.
-  - Xero docs list Payroll and Projects, but the code has only Accounting and Assets.
-  - Google Ads docs describe a "Campaign Report Grouping" parameter that does not exist in code.
-  - PayPal Braintree docs use `receivedDate` as the disputes cursor, but the code uses `received_date`.
-- **Manifest and code mismatches:**
-  - Google Ads declares outbound strategies, but the outbound code is empty stubs.
-  - MSSQL has an outbound form but no outbound strategies.
+  - Slack docs say `Create`; the plugin's strategy is `Post Message`.
+  - Airtable docs say Incremental is supported; the plugin supports Full Refresh only.
+  - SFMC and Google Sheets docs say Full Refresh only; the plugins allow Incremental in some cases.
+  - The Contentful plugin has more streams, and a Content Delivery API method, than the docs list.
+  - Xero docs list Payroll and Projects; the plugin offers only Accounting and Assets.
+  - Google Ads docs describe a "Campaign Report Grouping" parameter that the plugin doesn't have.
+  - PayPal Braintree docs use `receivedDate` as the disputes cursor; the plugin uses `received_date`.

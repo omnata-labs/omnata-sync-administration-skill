@@ -37,4 +37,4 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 ## Sources
 
 - Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/aerobotics/README.md`
-- Conflict: docs omit `farms_all`, which exists in code. Exact per-stream dependency map and cursor list not fully verified.
+- Conflict: docs omit the `farms_all` stream, which the plugin provides. Exact per-stream dependency map and cursor list not fully verified.

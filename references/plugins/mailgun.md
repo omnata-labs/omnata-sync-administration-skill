@@ -37,6 +37,8 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ## Outbound
 
+> **Warning:** `Send` emails one message per new record through Mailgun, so it sends record data (email addresses and message content) to Mailgun and to the recipients. Confirm the source table, recipients and content with the user before running it.
+
 **Target types** (`OUTBOUND_TARGET_TYPE`): Not used.
 
 **Strategies** (`SYNC_STRATEGY_NAME`):

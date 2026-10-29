@@ -9,7 +9,7 @@
 
 ## Inbound
 
-**Sync parameters** (`SYNC_PARAMETERS`): None, pass `OBJECT_CONSTRUCT()`. The form fields are commented out in code. `max_concurrent_streams` is a tuning parameter.
+**Sync parameters** (`SYNC_PARAMETERS`): None, pass `OBJECT_CONSTRUCT()`. `max_concurrent_streams` is a tuning parameter.
 
 **Streams**: Dynamic. One stream per QuestDB table, discovered via `tables()` and `table_columns()`, named by table name. Primary key is the table's upsert key columns; tables without upsert keys have no source-defined primary key and need `STREAM_PRIMARY_KEYS`. Default cursor is the table's designated timestamp.
 
