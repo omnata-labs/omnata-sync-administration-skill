@@ -1,5 +1,3 @@
-<!-- contributor: Cortex Code — Snowflake QUERY_HISTORY/TASK_HISTORY attribution, warehouse metering, cost estimation SQL -->
-<!-- contributor: Co-work — Omnata task naming conventions, sync architecture, warehouse sizing guidance -->
 ---
 name: omnata-monitoring-warehouse-cost
 description: "Attribute Snowflake warehouse costs to Omnata syncs and UI usage. Use when: user asks about Omnata warehouse costs, credits used by syncs, which syncs cost the most, warehouse utilisation, cost attribution, or wants to optimise Omnata warehouse spend. Triggers: omnata cost, omnata credits, warehouse cost, sync cost, omnata warehouse, cost attribution, expensive syncs, warehouse utilisation, omnata spend."
