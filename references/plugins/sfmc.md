@@ -2,61 +2,41 @@
 
 | | |
 |---|---|
-| Plugin ID | `sfmc` |
-| Plugin FQN | `OMNATA__SFMC` (as shown in `DATA_VIEWS.CONNECTION.PLUGIN_FQN`) |
-| Directions | Inbound: Yes. Outbound: Yes |
-| Docs | `apps/sfmc/README.md` |
+| Plugin FQN | `OMNATA__SFMC` |
+| Page | `sfmc.md` |
+
+Look up directions, outbound strategies and stream strategies from the installed apps first ("Plugin capabilities come from the installed apps" in `configure-syncs.md`). Point the user to the plugin's `DOCS_URL` for explanations and setup.
 
 ## Inbound
 
 **Sync parameters** (`SYNC_PARAMETERS`):
-- `stream_type` (required): `data_extension`, `journey_history`, or `tracking_extract` (needs an SFTP or Cloud Storage connection method; the option is also shown on "OAuth for APIs" but runs the SFTP path there and will fail). Changes the stream list and other fields.
-- `activity_types`, `statuses` (required for `journey_history`, multi-select).
-- `data_extension_filter` (`filter` or `all`) and `data_extension_filter_text` (required when `filter`): limit listed Data Extensions.
-- `account_id` (optional, data_extension): override the connection's Account ID.
-- `use_ftp_for_export` (SFTP methods) and `auto_fix_csv` (optional, data_extension).
+- `stream_type` (required): `data_extension`, `journey_history` or `tracking_extract`. Changes the stream list and other fields.
+- `activity_types` and `statuses` (required for journey history, multi-select).
+- `data_extension_filter` (`filter` or `all`) and `data_extension_filter_text` (required when `filter`): limit the listed Data Extensions.
+- `account_id` (optional, data extensions): overrides the connection's Account ID.
+- `use_ftp_for_export` (SFTP methods) and `auto_fix_csv` (optional, data extensions).
 
-**Streams**: Dynamic for `data_extension` (one per Data Extension, named by its Name) and `journey_history` (one per journey, named by journey name, key `ActivityId`). Static for `tracking_extract` (for example `Bounces`, `Clicks`, `Conversions`). Data Extensions with no primary key fields have no source-defined primary key. No Data Extension has a default cursor.
-
-**Sync strategies supported**: Data Extensions: `Full Refresh`, plus `Incremental` when exactly one primary key field exists. Journey history and tracking extract: `Incremental` only.
-
-```sql
-CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
-    SYNC_SLUG          => 'sfmc-inbound',
-    SYNC_NAME          => 'Salesforce Marketing Cloud to Snowflake',
-    CONNECTION_SLUG    => '<connection_slug>'::VARIANT,
-    STREAM_NAMES       => ['<data_extension_name>'],
-    SYNC_STRATEGY      => 'Full Refresh'::VARIANT,
-    STORAGE_BEHAVIOUR  => 'merge'::VARIANT,
-    SYNC_PARAMETERS    => OBJECT_CONSTRUCT('stream_type', 'data_extension', 'data_extension_filter', 'all'),
-    SYNC_SCHEDULE      => OBJECT_CONSTRUCT('mode', 'manual', 'warehouse', '<warehouse>', 'time_limit_mins', 60),
-    RAISE_ERRORS       => true
-);
-```
+**Streams**: one per Data Extension, or one per journey for journey history. Tracking extract has a fixed list (e.g. `Bounces`, `Clicks`). Data Extensions without primary key fields need `STREAM_PRIMARY_KEYS`. A Data Extension supports Incremental only when it has exactly one primary key field.
 
 ## Outbound
 
-**Target types** (`OUTBOUND_TARGET_TYPE`): `Data Extension`: Create, Upsert, Replace, Mirror.
-
-**Strategies** (`SYNC_STRATEGY_NAME`): `Create` (AddAndDoNotUpdate), `Upsert` (AddAndUpdate), `Replace` (Overwrite), `Mirror` (AddAndUpdate, or ColumnBased when deletes exist).
+> **Warning: data loss and third-party sharing.** Outbound syncs send Snowflake data, including any personal data in the mapped columns, to Salesforce Marketing Cloud. `Replace` and `Mirror` permanently overwrite or delete Data Extension rows. Tell the user this before configuring an outbound sync.
 
 **Sync parameters** (`SYNC_PARAMETERS`):
-- `data_extension_name` (required): target Data Extension (option carries metadata such as ObjectID and Name).
-- `create_if_missing` (optional, default false): create the Data Extension if absent.
-- `account_id` (optional): override the connection's Account ID.
+- `data_extension_name` (required): the target Data Extension. The stored value carries option metadata, so copy it from an existing sync rather than building it.
+- `create_if_missing` (optional, default false): create the Data Extension if it doesn't exist.
+- `account_id` (optional): overrides the connection's Account ID.
 
-**Field mappings** (`FIELD_MAPPINGS`): `field_mapping_selector`. Targets are the columns of the chosen Data Extension, fetched dynamically; new columns can be created. A primary key is required even for Replace.
+**Field mappings**: `field_mapping_selector`. Targets are the chosen Data Extension's columns, and new columns can be created. A primary key mapping is required, even for Replace.
 
-**Required approach**: outbound syncs can only be created from the definition of an existing sync to this plugin. Copy `SYNC_PARAMETERS`, `FIELD_MAPPINGS` and the strategy from it (see Outbound Step 1 in `configure-syncs.md`) and adapt. Do not hand-build them from the fields listed above. If no sync to this plugin exists, the user must create one in the Omnata UI first.
+**Before running**: `Replace` overwrites the Data Extension contents. `Mirror` deletes rows that are no longer in the source. This can't be undone. Show the user what will be affected and wait for their explicit yes; don't treat an unclear reply as confirmation.
+
+Outbound syncs are created by copying an existing sync to this plugin (Outbound Step 1 in `configure-syncs.md`). If none exists, the user creates one in the Omnata UI first.
 
 ## Notes
 
-- Outbound requires an SFTP or Cloud Storage connection method; API-only connections show an error field instead.
-- Tracking extract syncs run over SFTP or Cloud Storage connection methods (Cloud Storage uses the connection's `snowflake_stage` and `file_location_external_key`).
-- Consumer UDFs/UDTFs in the plugin's `UDFS` schema, each taking `CONNECTION_PARAMETERS` first: `FETCH_DATA_EXTENSION_FOLDERS` (UDTF: `CATEGORY_ID`, `FOLDER_PATH`), `GET_SEND_SUMMARY(SEND_ID)` (send job status and counters, available sooner than tracking extracts), `GET_JOURNEY_DEFINITION(JOURNEY_NAME)` (latest version, or null), `ENSURE_TRIGGERED_SEND(CUSTOMER_KEY, NAME, EMAIL_NAME, SENDER_PROFILE_ID, SEND_CLASSIFICATION_ID, DELIVERY_PROFILE_ID)` (creates/activates a Triggered Send Definition; send with `SEND_TRIGGERED_EMAIL`).
+- Outbound and tracking extract need an SFTP or Cloud Storage connection method. Tracking extract also appears on the OAuth for APIs method but fails there.
+- Cloud Storage tracking extracts use the connection's `snowflake_stage` and `file_location_external_key`.
+- The plugin's UDFS schema has helper functions that take `CONNECTION_PARAMETERS` first: `FETCH_DATA_EXTENSION_FOLDERS`, `GET_SEND_SUMMARY`, `GET_JOURNEY_DEFINITION` and `ENSURE_TRIGGERED_SEND`.
 
-## Sources
-
-- Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/sfmc/README.md`
-- Conflict: docs say Data Extensions are Full Refresh only; code also allows Incremental for single-PK Data Extensions. Code used here. Docs do not mention tracking extract streams.
-- `data_extension_name` stores option metadata, so hand-built values are risky. Not verified how to construct it outside the UI.
+> **Warning: `SEND_TRIGGERED_EMAIL` emails real people.** Recipient personal data (email addresses, names and any fields in the message) is sent to Salesforce Marketing Cloud, and sent emails can't be recalled. Confirm the recipients and content with the user, and wait for their explicit yes before calling it.

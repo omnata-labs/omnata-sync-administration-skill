@@ -2,46 +2,25 @@
 
 | | |
 |---|---|
-| Plugin ID | `reddit_ads` |
-| Plugin FQN | `OMNATA__REDDIT_ADS` (as shown in `DATA_VIEWS.CONNECTION.PLUGIN_FQN`) |
-| Directions | Inbound: Yes. Outbound: No |
-| Docs | `apps/reddit_ads/README.md` |
+| Plugin FQN | `OMNATA__REDDIT_ADS` |
+| Page | `reddit_ads.md` |
+
+Look up directions, outbound strategies and stream strategies from the installed apps first ("Plugin capabilities come from the installed apps" in `configure-syncs.md`). Point the user to the plugin's `DOCS_URL` for explanations and setup.
 
 ## Inbound
 
 **Sync parameters** (`SYNC_PARAMETERS`):
-- `ad_accounts` (required, multi-select): Ad Accounts to sync, options fetched from Reddit.
+- `ad_accounts` (required, multi-select): the Ad Accounts to sync. Options come from Reddit.
 - `reporting_mode` (required): Standard (default) or Custom. Changes the stream list.
-- `time_zone_id` (optional): time zone for report day aggregation. Blank means UTC.
-- `backfill_days` (optional): days of history on first sync of a performance report (docs: default 90, max 730).
-- `restatement_days` (optional): trailing days re-read on each later run (docs: default 30).
-- `custom_breakdowns` (required in Custom mode): breakdowns for the custom report.
-- `custom_fields` (required in Custom mode): report columns for the custom report.
+- `time_zone_id` (optional): time zone for daily report aggregation. Blank means UTC.
+- `backfill_days` (optional): days of history on the first sync of a performance report (default 90, max 730).
+- `restatement_days` (optional): trailing days re-read on each later run (default 30).
+- `custom_breakdowns` and `custom_fields` (required in Custom mode): the breakdowns and columns for the custom report.
 
-**Streams**: Standard mode is a static catalog: entity streams (`businesses`, `ad_accounts`, `campaigns`, `ad_groups`, `ads`, `funding_instruments`), metric streams (for example `campaign_performance`, `ad_performance`, `country_performance`) and conversion streams (for example `campaign_conversions`). Custom mode produces a single stream built from the selected breakdowns and fields; it lists nothing until both are set. All streams have source-defined primary keys (composite for report streams).
-
-**Sync strategies supported**: Metric and conversion report streams support `Incremental` and `Full Refresh`. Entity streams are `Full Refresh` only.
-
-```sql
-CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
-    SYNC_SLUG          => 'reddit_ads-inbound',
-    SYNC_NAME          => 'Reddit Ads to Snowflake',
-    CONNECTION_SLUG    => '<connection_slug>'::VARIANT,
-    STREAM_NAMES       => ['campaigns', 'ads', 'campaign_performance', 'ad_performance'],
-    SYNC_STRATEGY      => 'Auto'::VARIANT,
-    STORAGE_BEHAVIOUR  => 'merge'::VARIANT,
-    SYNC_PARAMETERS    => OBJECT_CONSTRUCT('ad_accounts', ['<ad_account_id>'], 'reporting_mode', '<standard_mode_value>'),
-    SYNC_SCHEDULE      => OBJECT_CONSTRUCT('mode', 'manual', 'warehouse', '<warehouse>', 'time_limit_mins', 60),
-    RAISE_ERRORS       => true
-);
-```
+**Streams**: Standard mode has a fixed list of entity, metric and conversion streams (e.g. `campaigns`, `campaign_performance`). Custom mode produces one stream from the chosen breakdowns and fields, and lists nothing until both are set.
 
 ## Notes
 
 - One Custom report per sync. Multiple custom reports need multiple syncs.
-- Ad Account IDs take the form `a2_<id>` (per docs).
-
-## Sources
-
-- Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/reddit_ads/README.md`
-- The literal option values for `reporting_mode` (constants `STANDARD_MODE` / `CUSTOM_MODE`) and the stored shape of the `ad_accounts` multi-select were not resolved. Copy them from a UI-created sync.
+- Ad Account IDs look like a2_ followed by the ID.
+- The literal values for `reporting_mode` and the stored shape of `ad_accounts` are unconfirmed. Copy them from a UI-created sync.

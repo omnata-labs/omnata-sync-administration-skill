@@ -2,42 +2,26 @@
 
 | | |
 |---|---|
-| Plugin ID | `dynamics_365_synapse_link` |
-| Plugin FQN | `MONITORIAL__DYNAMICS_365_SYNAPSE_LINK` (as shown in `DATA_VIEWS.CONNECTION.PLUGIN_FQN`) |
-| Directions | Inbound: Yes. Outbound: No |
-| Docs | `apps/dynamics_365_synapse_link/README.md` |
+| Plugin FQN | `MONITORIAL__DYNAMICS_365_SYNAPSE_LINK` |
+| Page | `dynamics_365_synapse_link.md` |
+
+Look up directions, outbound strategies and stream strategies from the installed apps first ("Plugin capabilities come from the installed apps" in `configure-syncs.md`). Point the user to the plugin's `DOCS_URL` for explanations and setup.
+
+## Connection
+
+Follow `configure-connections.md`.
+- **Before you start**: Synapse Link must use "Enable incremental update folder structure", or the plugin can't read the export. The user also needs an Azure service principal with Storage Blob Data Reader on the storage account. See the docs.
+- **Storage integration**: the connection needs a Snowflake storage integration (`azure_storage_integration`) granted to both `OMNATA_SYNC_ENGINE` and the plugin application.
+- **Optional fields**: `d365_environment_url` (F&O) and `d365_crm_environment_url` (CRM/Dataverse) are only needed for reconciliations.
 
 ## Inbound
 
 **Sync parameters** (`SYNC_PARAMETERS`):
-- `include_metadata` (optional checkbox, default `true`): appends Synapse Link metadata (SinkCreatedOn, SinkModifiedOn) so every record version from the data lake is kept. When `false`, only one record per `recid` and `recversion` combination is retained.
+- `include_metadata` (optional, default `true`): appends Synapse Link metadata (SinkCreatedOn, SinkModifiedOn) so every record version is kept. When `false`, only one record per `recid` and `recversion` is kept.
 
-**Streams**: Dynamic. One stream per entity found in the Synapse Link export metadata on the connection's ADLS Gen2 container (read through the plugin's internal stage). Stream names are the exported entity (table) names, for example `account` or `generaljournalentry`. Primary keys come from key columns in the entity schema. No stream declares a default cursor field; cursors are source-defined (folder timestamps and record versions).
-
-**Sync strategies supported**: Each stream supports exactly one strategy. Most entities are `Incremental` only. A fixed list of small kernel/system tables (for example `dataarea`, `userinfo`, `securityrole`, `sqldictionary`, `partitions`) and the option set metadata entities are `Full Refresh` only. `SYNC_STRATEGY => 'Auto'` is the safest choice for a mixed selection.
-
-```sql
-CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
-    SYNC_SLUG          => 'dynamics_365_synapse_link-inbound',
-    SYNC_NAME          => 'Microsoft Dynamics 365 Synapse Link to Snowflake',
-    CONNECTION_SLUG    => '<connection_slug>'::VARIANT,
-    STREAM_NAMES       => ['account', 'generaljournalentry', 'dataarea'],
-    SYNC_STRATEGY      => 'Auto'::VARIANT,
-    STORAGE_BEHAVIOUR  => 'merge'::VARIANT,
-    SYNC_PARAMETERS    => OBJECT_CONSTRUCT('include_metadata', true),
-    SYNC_SCHEDULE      => OBJECT_CONSTRUCT('mode', 'manual', 'warehouse', '<warehouse>', 'time_limit_mins', 60),
-    RAISE_ERRORS       => true
-);
-```
+**Streams**: dynamic, one per entity in the Synapse Link export (e.g. `account`). Each stream supports exactly one strategy, so use `Auto` for a mixed selection.
 
 ## Notes
 
-- Synapse Link must be configured with "Enable incremental update folder structure", otherwise the plugin cannot read the export.
-- The connection requires a Snowflake storage integration (`azure_storage_integration`) granted to both `OMNATA_SYNC_ENGINE` and the plugin application, plus an Azure service principal with Storage Blob Data Reader on the storage account.
-- Tuning parameter (not a sync parameter): `max_concurrent_folders` (1 to 50) controls how many date folders are processed concurrently (default 24).
-- `d365_environment_url` / `d365_crm_environment_url` on the connection are only needed for reconciliations (F&O and CRM/Dataverse respectively). Reconciliations are managed in the plugin's Streamlit app `reconciliation_ui."D365 Reconciliation"` (application roles `omnata_management` or `dynamics_reconciliation_management`), not through sync parameters.
-
-## Sources
-
-- Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/dynamics_365_synapse_link/README.md`
-- Stream names depend on which tables are exported. `account` is taken from a docs file path example and `generaljournalentry` from the docs reconciliation example; neither is guaranteed to exist in a given environment.
+- Reconciliations are managed in the plugin's Streamlit app, not through sync parameters. It needs the `omnata_management` or `dynamics_reconciliation_management` application role.
+- The developer is Monitorial, so the FQN prefix is `MONITORIAL`, not `OMNATA`.

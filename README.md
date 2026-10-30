@@ -22,10 +22,11 @@ A Cortex Code skill for administering [Omnata Sync Engine](https://omnata.com) �
 Besides reading data, the skill can make changes in your Snowflake account and in connected apps. Before any of these, CoCo lists what will be affected and asks you to confirm:
 - **Deletes** syncs, branches or connections, permanently. Deleting a sync also deletes its inbound tables and views
 - **Runs syncs and full refreshes**, which use warehouse credits and the source app's API rate limits
-- **Configures outbound syncs that change data in other apps**: Replace, Delete or Mirror strategies, and actions such as Jira `DELETE_ISSUES`, overwrite or delete records in the destination. Outbound syncs also send Snowflake data to third-party services
+- **Configures outbound syncs that change data in other apps**: Replace, Delete or Mirror strategies, and actions such as Jira `DELETE_ISSUES`, overwrite or delete records in the destination. 
+- **Sends data to third parties, on a schedule**: outbound syncs send Snowflake data, which may include personal data, to third-party services, where it's subject to those services' own terms. A scheduled outbound sync sends data automatically on every run, with no further confirmation, so CoCo shows you the columns it sends and asks for your explicit yes before it turns on a schedule. You can pause the sync at any time
 - **Creates connections using credentials you supply** (API keys, tokens, service account keys, OAuth). CoCo recommends entering secrets in the Omnata UI, where they stay out of query history. It never asks you to paste a secret into the chat
 - **Creates schemas and database roles**, transfers schema ownership and grants privileges for inbound storage locations
-- **Runs a local Python script** that previews storage locations from a plan file
+- **Runs a local Python script** (`scripts/render_storage_location.py`) that only reads a plan file CoCo writes and prints a storage location preview. It doesn't connect to Snowflake or change anything
 - **Fetches the public Snowflake and Omnata status pages** when preparing a support request
 
 ## Licence
@@ -64,7 +65,7 @@ The simplest installation method. CoCo Desktop fetches and manages the skill dir
 CoCo clones the repository, discovers all skill files, and registers the skill immediately. Verify by asking:
 
 ```
-What skills do you have available?
+Do you have the Omnata Sync Administration skill?
 ```
 
 > **Pinning to a release:** By default CoCo tracks the latest version on `main`, which is recommended for most users. To install a specific version you have reviewed, append its tag from the [Releases page](https://github.com/omnata-labs/omnata-sync-administration-skill/releases):
@@ -103,7 +104,7 @@ git clone --branch v<version> https://github.com/omnata-labs/omnata-sync-adminis
 Start Cortex CLI — the skill is auto-detected. Verify with:
 
 ```
-What skills do you have available?
+Do you have the Omnata Sync Administration skill?
 ```
 
 ### Update
@@ -171,7 +172,7 @@ permanent skill in this workspace by copying the files from the tags/v<version> 
 4. Verify the skill is loaded:
 
 ```
-What skills do you have available?
+Do you have the Omnata Sync Administration skill?
 ```
 
 ### Update (Snowsight)
@@ -223,19 +224,16 @@ My normalized view for the Contact object is throwing a SQL error — what's wro
 VERSION
 SKILL.md
 README.md
-references/actions.md
 references/branching.md
 references/configure-connections.md
 references/configure-syncs.md
+references/connection-management.md
 references/data-management.md
 references/error-knowledge-base.md
 references/event-table-diagnostics.md
-references/monitoring-connections.md
-references/monitoring-inbound.md
-references/monitoring-outbound.md
-references/monitoring-sync-status.md
 references/monitoring-warehouse-cost.md
 references/support-handoff.md
+references/sync-management.md
 references/plugins/  (README.md, _TEMPLATE.md and one page per plugin)
 scripts/render_storage_location.py
 .github/workflows/release.yml

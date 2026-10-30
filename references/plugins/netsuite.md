@@ -2,41 +2,20 @@
 
 | | |
 |---|---|
-| Plugin ID | `netsuite` |
-| Plugin FQN | `OMNATA__NETSUITE` (as shown in `DATA_VIEWS.CONNECTION.PLUGIN_FQN`) |
-| Directions | Inbound: Yes. Outbound: No |
-| Docs | `apps/netsuite/README.md` |
+| Plugin FQN | `OMNATA__NETSUITE` |
+| Page | `netsuite.md` |
+
+Look up directions, outbound strategies and stream strategies from the installed apps first ("Plugin capabilities come from the installed apps" in `configure-syncs.md`). Point the user to the plugin's `DOCS_URL` for explanations and setup.
 
 ## Inbound
 
-**Sync parameters** (`SYNC_PARAMETERS`): None, pass `OBJECT_CONSTRUCT()`. Throughput settings (`max_concurrent_streams`, `jdbcSetFetchSize` and others) are tuning parameters, not sync parameters.
+**Sync parameters** (`SYNC_PARAMETERS`): None, pass `OBJECT_CONSTRUCT()`.
 
-**Streams**: Dynamic. Streams are the SuiteAnalytics Connect tables discovered from NetSuite's `OA_TABLES` catalog, named by table name (for example `transaction`, `customer`, `item`, plus `customrecord*`, `customlist*` and `map_*` tables). Primary keys come from an internal list for system tables, `id` for custom record/list and `usernote` tables, and `mapone`/`maptwo` for `map_*` tables. Tables outside those patterns may have no source-defined primary key and need `STREAM_PRIMARY_KEYS`.
-
-**Sync strategies supported**: Tables with a modification-tracking cursor column support `Incremental` and `Full Refresh`. Tables without one support `Full Refresh` only.
-
-```sql
-CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
-    SYNC_SLUG          => 'netsuite-inbound',
-    SYNC_NAME          => 'NetSuite to Snowflake',
-    CONNECTION_SLUG    => '<connection_slug>'::VARIANT,
-    STREAM_NAMES       => ['transaction', 'customer', 'item'],
-    SYNC_STRATEGY      => 'Auto'::VARIANT,
-    STORAGE_BEHAVIOUR  => 'merge'::VARIANT,
-    SYNC_PARAMETERS    => OBJECT_CONSTRUCT(),
-    SYNC_SCHEDULE      => OBJECT_CONSTRUCT('mode', 'manual', 'warehouse', '<warehouse>', 'time_limit_mins', 60),
-    RAISE_ERRORS       => true
-);
-```
+**Streams**: discovered from the SuiteAnalytics Connect tables, named by table name, such as `transaction` and `customer`. Some tables have no source-defined primary key and need `STREAM_PRIMARY_KEYS`.
 
 ## Notes
 
-- Requires the NetSuite JDBC driver to be installed and network access on TCP port 1708 (see docs).
-- First stream listing reads `OA_TABLES` and can take several minutes on large instances.
-- NetSuite enforces a per-account concurrent connection limit. Keep `max_concurrent_streams` well below it.
-- `map_*` tables for multi-select relationships are not auto-selected. Add them to `STREAM_NAMES` explicitly.
-
-## Sources
-
-- Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/netsuite/README.md`
-- Exact casing of discovered table names depends on the live `OA_TABLES` catalog. The example names come from the plugin's built-in system table list and were not checked against a live account.
+- The NetSuite JDBC driver must be installed, with network access on TCP port 1708. See the docs.
+- The first stream listing can take several minutes on large accounts.
+- NetSuite limits concurrent connections per account. Keep the `max_concurrent_streams` tuning parameter well below that limit.
+- Tables for multi-select relationships, named with a map_ prefix, are not selected automatically. Add them to `STREAM_NAMES` yourself.

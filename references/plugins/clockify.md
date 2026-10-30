@@ -2,44 +2,24 @@
 
 | | |
 |---|---|
-| Plugin ID | `clockify` |
-| Plugin FQN | `MONITORIAL__CLOCKIFY` (as shown in `DATA_VIEWS.CONNECTION.PLUGIN_FQN`) |
-| Directions | Inbound: Yes. Outbound: No |
-| Docs | `apps/clockify/README.md` |
+| Plugin FQN | `MONITORIAL__CLOCKIFY` |
+| Page | `clockify.md` |
+
+Look up directions, outbound strategies and stream strategies from the installed apps first ("Plugin capabilities come from the installed apps" in `configure-syncs.md`). Point the user to the plugin's `DOCS_URL` for explanations and setup.
+
+## Connection
+
+- `domain_prefix` is the regional API prefix (for example `euc1`, `use2`, `euw2`, `apse2`; default `api`). It must match the workspace region or API calls fail.
 
 ## Inbound
 
 **Sync parameters** (`SYNC_PARAMETERS`):
-- `workspaces` (required, multi-select): Clockify workspace IDs to retrieve data for. Options come from the `/workspaces` endpoint (value is the workspace `id`).
+- `workspaces` (required, multi-select): the Clockify workspace IDs to retrieve data for. Values are workspace IDs, not names.
 
-**Streams**: Static list (does not depend on sync parameters). Representative streams: `workspaces`, `users`, `projects`, `clients`, `tags`, `time_entries`, `approval_requests`, `assignments`, `expenses`, `invoices`. Several child streams depend on a parent and are populated from it (for example `user_settings` and `user_memberships` from `users`, `tasks` and `project_memberships` from `projects`, `time_entry_custom_field_values` from `time_entries`). All streams have a source-defined primary key (mostly `workspaceId` + `id`).
-
-**Sync strategies supported**: `time_entries`, `approval_requests` and `assignments` (and children that inherit from them) support `Incremental` and `Full Refresh` with source-defined cursors. All other streams are `Full Refresh` only.
-
-```sql
-CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
-    SYNC_SLUG          => 'clockify-inbound',
-    SYNC_NAME          => 'Clockify to Snowflake',
-    CONNECTION_SLUG    => '<connection_slug>'::VARIANT,
-    STREAM_NAMES       => ['workspaces', 'users', 'projects', 'clients', 'time_entries'],
-    SYNC_STRATEGY      => 'Auto'::VARIANT,
-    STORAGE_BEHAVIOUR  => 'merge'::VARIANT,
-    SYNC_PARAMETERS    => OBJECT_CONSTRUCT(
-        'workspaces', ARRAY_CONSTRUCT('<workspace_id>')
-    ),
-    SYNC_SCHEDULE      => OBJECT_CONSTRUCT('mode', 'manual', 'warehouse', '<warehouse>', 'time_limit_mins', 60),
-    RAISE_ERRORS       => true
-);
-```
+**Streams**: a static list (e.g. `users`, `projects`, `time_entries`). Some child streams are populated from a parent stream, so include the parent in the same sync.
 
 ## Notes
 
-- `workspaces` values are Clockify workspace IDs, not names.
 - `time_entries` is fetched per user, so include `users` in the same sync.
-- The connection's `domain_prefix` (regional prefix such as `euc1`, `use2`, `euw2`, `apse2`, default `api`) must match the workspace region or API calls fail.
-- `time_entries` also processes deletes via the Clockify deleted-entities API.
-
-## Sources
-
-- Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/clockify/README.md`
-- Exact stored value format for the multi-select `workspaces` parameter (array of IDs) is assumed, not verified.
+- `time_entries` also processes deletes from Clockify.
+- The developer is Monitorial, so the FQN prefix is `MONITORIAL`, not `OMNATA`.

@@ -1,6 +1,6 @@
 ---
 name: omnata-support-handoff
-description: "Advise the user on what was found during sync diagnosis, then offer to create an Omnata support ticket. Use when: diagnosis is complete and the user needs help deciding next steps, the error could not be resolved through self-service, the user asks to contact Omnata support, or the user asks to raise a ticket. Triggers: contact Omnata support, raise an Omnata support ticket, submit a ticket to Omnata, Omnata support, report an Omnata bug, who do I contact at Omnata, can Omnata help."
+description: "Advise the user on what was found during sync diagnosis, then offer to create an Omnata support ticket. Use when: diagnosis is complete and the user needs help deciding next steps, the error could not be resolved through self-service, the user asks to contact Omnata support, or the user asks to raise a ticket. Triggers: contact Omnata support, raise an Omnata support ticket, submit a ticket to Omnata, report an Omnata bug, who do I contact at Omnata, can Omnata help."
 ---
 
 # Omnata Support Handoff
@@ -153,7 +153,7 @@ Present the following in plain language:
 **What happened:**
 - Which sync failed (name and direction: inbound/outbound)
 - When it last ran and what its current health state is
-- The error in plain language, in the user's language (not just the raw code — explain what it means)
+- The error in plain language (not just the raw code — explain what it means)
 
 **Error classification:**
 - State the error origin from `references/error-knowledge-base.md`

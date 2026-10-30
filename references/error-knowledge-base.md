@@ -109,13 +109,13 @@ in the destination app's configuration, credentials, or the data values being se
 | **Data validation / field error** | HTTP 422; text references specific fields, validation rules, data types, required fields, string length |
 | **Duplicate / already exists** | Text contains "duplicate", "already exists", "conflict", or destination-specific uniqueness codes |
 | **Record not found / deleted** | HTTP 404; text contains "not found", "does not exist", "is deleted", "no such record" |
-| **Transient / server error** | HTTP 500/502/503; text contains "internal server error", "bad gateway", "service unavailable", "lock", "contention". **Note:** if failures are consecutive across many runs but then resolve on their own, this may be a credential issue in disguise — some platforms return HTTP 500 for expired credentials rather than HTTP 401. Check the connection's history for a credential change that coincides with the recovery (see "Step 4: Connection History" in `references/monitoring-connections.md`). |
+| **Transient / server error** | HTTP 500/502/503; text contains "internal server error", "bad gateway", "service unavailable", "lock", "contention". **Note:** if failures are consecutive across many runs but then resolve on their own, this may be a credential issue in disguise — some platforms return HTTP 500 for expired credentials rather than HTTP 401. Check the connection's history for a credential change that coincides with the recovery (see "Step 4: Connection History" in `references/connection-management.md`). |
 
 **Inbound-specific endpoint errors:**
 
 | Error type | How to recognise |
 |---|---|
-| **Schema / type change** | Stream pulls a field with a changed type or new required field the connector doesn't handle. If the raw data is arriving correctly but the normalized view is missing columns or throwing errors, follow the **Normalized View Troubleshooting** section in `references/monitoring-inbound.md` |
+| **Schema / type change** | Stream pulls a field with a changed type or new required field the connector doesn't handle. If the raw data is arriving correctly but the normalized view is missing columns or throwing errors, follow the **Normalized View Troubleshooting** section in `references/sync-management.md` |
 | **Cursor / pagination error** | Error in `INBOUND_GLOBAL_ERROR_BY_STREAM` references a token, cursor, or page parameter |
 | **Scope / permission error** | OAuth scope no longer covers the stream's object type |
 

@@ -1,6 +1,6 @@
 ---
 name: omnata-sync
-description: "Manage, monitor and configure Omnata Sync Engine syncs (a Snowflake Native App). Use when the user asks about Omnata sync status, health, failed syncs, sync errors, run history, failed, stuck or delayed records, inbound data freshness, connections, or warehouse cost and credits; wants to troubleshoot a sync; wants CoCo to set up connections and inbound or outbound syncs end to end instead of the UI (including bulk streams from a file); wants to edit or re-authenticate a connection; asks where inbound data lands (storage location); wants branching, test vs production, or to copy config between branches; or wants to run, pause, delete or clean up syncs and connections. Triggers: omnata, sync status, sync failures, records not syncing, omnata cost, configure sync, create connection, CONFIGURE_OMNATA_INBOUND_SYNC, CONFIGURE_OMNATA_OUTBOUND_SYNC, BEGIN_CONNECTION_CREATION, storage location, sync branch, delete sync, first sync after installing a plugin."
+description: "Manage, monitor and configure Omnata Sync Engine syncs (a Snowflake Native App); runs a local preview script and reads public status pages. Use when the user asks about Omnata sync status, health, failed syncs, sync errors, run history, failed, stuck or delayed records, inbound data freshness, connections, or warehouse cost and credits; wants to troubleshoot a sync; wants CoCo to set up connections and syncs end to end (including bulk streams from a file); wants to edit or re-authenticate a connection; asks where inbound data lands (storage location); wants branching, test vs production, or to copy config between branches; or wants to run, pause, delete or clean up syncs and connections. Triggers: omnata, omnata sync status, omnata sync failures, configure omnata sync, create omnata connection, CONFIGURE_OMNATA_INBOUND_SYNC, CONFIGURE_OMNATA_OUTBOUND_SYNC, BEGIN_CONNECTION_CREATION, omnata storage location, delete omnata sync, first sync after installing a plugin."
 license: Apache-2.0
 ---
 
@@ -31,15 +31,17 @@ Identify what the user needs and read the appropriate reference file before proc
 | User intent | Reference file |
 |---|---|
 | Set up syncs end to end with CoCo instead of the UI, first setup after installing a plugin, sync data from or to an app with no connection yet, create or add a connection, edit a connection, rotate credentials, re-authorize OAuth, add credentials, OAuth or service account connection, BEGIN_CONNECTION_CREATION, BEGIN_CONNECTION_EDIT, COMPLETE_CONNECTION_CREATION, CANCEL_CONNECTION_CREATION | `references/configure-connections.md`, then `references/configure-syncs.md` |
-| Delete a sync, clean up test syncs and connections, DELETE_SYNC | `references/actions.md` |
+| Delete a sync | `references/sync-management.md` |
+| Clean up test syncs and connections, delete a connection | `references/connection-management.md` |
 | Branching, test vs prod, dev and prod environments, sandbox connections, test a sync before it goes live, promote or copy config between branches, production or non-production connection, single-environment testing, SYNC_BRANCH | `references/branching.md` |
-| Overall sync health, which syncs are failing | `references/monitoring-sync-status.md` |
-| Outbound sync: run history, failed records, stuck records, error details | `references/monitoring-outbound.md` |
-| Inbound sync: data freshness, run history, stream failures, cursor state, normalized views missing or stale, recreate views, refresh schema, access denied | `references/monitoring-inbound.md` |
-| What connections exist, which are orphaned or problematic, connection health, test connection, delete connection, advanced connection management | `references/monitoring-connections.md` |
-| Connection history, when was a connection created or edited, credential changes, secret updates | `references/monitoring-connections.md` |
+| Overall sync health, which syncs are failing | `references/sync-management.md` |
+| Outbound sync: run history, failed records, stuck records, error details | `references/sync-management.md` |
+| Inbound sync: data freshness, run history, stream failures, cursor state, normalized views missing or stale, recreate views, refresh schema, access denied | `references/sync-management.md` |
+| What connections exist, which are orphaned or problematic, connection health, test connection, delete connection, advanced connection management | `references/connection-management.md` |
+| Connection history, when was a connection created or edited, credential changes, secret updates | `references/connection-management.md` |
 | Contact Omnata support, raise a ticket, report a bug | `references/support-handoff.md` |
-| Run, pause, resume, delete a sync; resync records; pre/post hooks; stored procedure reference; set storage location; reassign connection | `references/actions.md` |
+| Run, pause, resume, rename or reschedule a sync; resync or skip records; full refresh; move inbound tables; pre/post hooks; sync procedure reference | `references/sync-management.md` |
+| Reassign a sync to another connection, change a connection's production flag, connection procedure reference | `references/connection-management.md` |
 | Create a new sync (connection must exist; plugin specifics in `references/plugins/<plugin_id>.md`), configure an outbound sync, configure an inbound sync, bulk add streams, configure Slack notifications, configure Salesforce sync, CONFIGURE_OMNATA_OUTBOUND_SYNC, CONFIGURE_OMNATA_INBOUND_SYNC | `references/configure-syncs.md` |
 | Data management: choose where inbound data lands, design or preview a storage location template, set or change the default storage location, INBOUND_STORAGE_LOCATION, SET_DEFAULT_INBOUND_STORAGE_LOCATION | `references/data-management.md` |
 | Deep diagnostic: stack traces, event logs, sync run lifecycle | `references/event-table-diagnostics.md` |
@@ -47,8 +49,8 @@ Identify what the user needs and read the appropriate reference file before proc
 | **Configure Syncs:** Configure an outbound sync, create a new outbound sync, create a sync to Slack/Salesforce/HubSpot, bulk-configure inbound sync streams, create sync with many streams, CONFIGURE_OMNATA_OUTBOUND_SYNC, CONFIGURE_OMNATA_INBOUND_SYNC | `references/configure-syncs.md` |
 When troubleshooting a failed, incomplete, slow or timed-out sync run, one of the first checks
 is whether the sync's warehouse was over capacity during the run. Queuing causes timeouts and
-errors that look unrelated. See "Step 2b: Check Warehouse Capacity During the Run" in
-`references/monitoring-sync-status.md`, and do it before working through the error text.
+errors that look unrelated. See "Step 2b: Check Warehouse Capacity During the Run, and Suggest Fixes" (Part 1) in
+`references/sync-management.md`, and do it before working through the error text.
 
 After surfacing any error message — whether from a failed outbound record (`LAST_RESULT`),
 a failed inbound stream (`INBOUND_GLOBAL_ERROR_BY_STREAM`), or a sync run (`GLOBAL_ERROR`) —
@@ -64,7 +66,7 @@ Event Table for full stack traces and sync run lifecycle detail.
 
 If a previously failing sync has recovered on its own and the cause is unclear, check the
 connection's history for credential changes that coincide with the failure window —
-see "Step 4: Connection History" in `references/monitoring-connections.md`. Consecutive
+see "Step 4: Connection History" (Part 1) in `references/connection-management.md`. Consecutive
 identical errors followed by self-recovery often indicate a credential rotation rather
 than a transient platform outage.
 ## Key facts

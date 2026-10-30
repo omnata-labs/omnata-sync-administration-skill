@@ -2,64 +2,42 @@
 
 | | |
 |---|---|
-| Plugin ID | `ms_excel` |
-| Plugin FQN | `OMNATA__MS_EXCEL` (as shown in `DATA_VIEWS.CONNECTION.PLUGIN_FQN`) |
-| Directions | Inbound: Yes. Outbound: Yes |
-| Docs | `apps/ms_excel/README.md` |
+| Plugin FQN | `OMNATA__MS_EXCEL` |
+| Page | `ms_excel.md` |
+
+Look up directions, outbound strategies and stream strategies from the installed apps first ("Plugin capabilities come from the installed apps" in `configure-syncs.md`). Point the user to the plugin's `DOCS_URL` for explanations and setup.
+
+## Connection
+
+Follow `configure-connections.md`.
+- **Before you start**: the app needs Microsoft Graph permissions on each SharePoint site. Inbound needs read access. Outbound needs Sites.ReadWrite.All and Files.ReadWrite.All, or a write role on each site. See the docs.
 
 ## Inbound
 
 **Sync parameters** (`SYNC_PARAMETERS`):
 - `sync_mode` (required): `single_file`, `multi_file` (Multi-File Individual) or `multi_file_consolidated` (Multi-File Consolidated).
-- `header_row` (optional, default `1`): the row containing column headers.
-- Single file: `spreadsheet_url` (required, SharePoint link) and `selected_file` (required, the Excel file chosen from that location).
-- Multi-file modes: `parent_folder_url` (required) and `filename_pattern` (optional regex). `primary_key_columns` (optional) is offered in one of the multi-file modes.
-- `header_row_preview` and `matched_files_preview` are display-only preview fields.
+- `header_row` (optional, default `1`): the row that holds the column headers.
+- Single file: `spreadsheet_url` (required, a SharePoint link) and `selected_file` (required, the Excel file chosen from that location).
+- Multi-file modes: `parent_folder_url` (required) and `filename_pattern` (optional regex). One of the multi-file modes also offers `primary_key_columns` (optional).
+- `header_row_preview` and `matched_files_preview` are display-only.
 
-**Streams**: dynamic, depend on `sync_mode`. Single file lists one stream per worksheet, named after the sheet (CSV files use the filename without extension). Multi-File Individual lists one stream per matched file, named after the file. Multi-File Consolidated lists a single stream `MultipleFiles`. Worksheet and CSV streams have no source-defined primary key or cursor, so supply `STREAM_PRIMARY_KEYS` if you want merge semantics.
-
-**Sync strategies supported**: worksheet and CSV streams are Full Refresh only. Multi-file streams support Full Refresh and Incremental.
-
-```sql
-CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
-    SYNC_SLUG          => 'ms_excel-inbound',
-    SYNC_NAME          => 'MS Excel to Snowflake',
-    CONNECTION_SLUG    => '<connection_slug>'::VARIANT,
-    STREAM_NAMES       => ['<worksheet_name>'],
-    SYNC_STRATEGY      => 'Full Refresh'::VARIANT,
-    STORAGE_BEHAVIOUR  => 'merge'::VARIANT,
-    SYNC_PARAMETERS    => OBJECT_CONSTRUCT('sync_mode', 'single_file', 'spreadsheet_url', '<sharepoint_link>', 'selected_file', '<file_id>', 'header_row', '1'),
-    SYNC_SCHEDULE      => OBJECT_CONSTRUCT('mode', 'manual', 'warehouse', '<warehouse>', 'time_limit_mins', 60),
-    RAISE_ERRORS       => true
-);
-```
+**Streams**: depend on `sync_mode`. Single file gives one stream per worksheet, named after the sheet. CSV files use the filename without its extension. Multi-File Individual gives one stream per matched file. Multi-File Consolidated gives one stream, `MultipleFiles`. Worksheet and CSV streams have no source-defined primary key or cursor, so set `STREAM_PRIMARY_KEYS` if you want merge.
 
 ## Outbound
 
-> **Warning:** `Replace` clears the worksheet's existing contents before writing. Confirm the target workbook and worksheet with the user before creating or running the sync.
-
-**Target types** (`OUTBOUND_TARGET_TYPE`): Not used.
-
-**Strategies** (`SYNC_STRATEGY_NAME`):
-- `Replace`: clears the worksheet's existing contents and writes the Snowflake data in full.
-
 **Sync parameters** (`SYNC_PARAMETERS`):
 - `workbook_filter` (optional): narrows the workbook list.
-- `spreadsheet_id` (required): the target Excel workbook.
+- `spreadsheet_id` (required): the target workbook.
 - `worksheet_name` (required): the target worksheet.
-- `preserve_column_order` (optional): keep the original column order of the source.
+- `preserve_column_order` (optional): keeps the source column order.
 
-**Field mappings** (`FIELD_MAPPINGS`): none. The outbound form defines no mapper, so the source columns are written as-is.
+**Field mappings**: none. Source columns are written as they are.
 
-**Required approach**: outbound syncs can only be created from the definition of an existing sync to this plugin. Copy `SYNC_PARAMETERS`, `FIELD_MAPPINGS` and the strategy from it (see Outbound Step 1 in `configure-syncs.md`) and adapt. Do not hand-build them from the fields listed above. If no sync to this plugin exists, the user must create one in the Omnata UI first.
+**Before running**: `Replace` clears the worksheet's contents, then writes the data in full. Existing worksheet data is lost. Show the user what will be affected and wait for their explicit yes; don't treat an unclear reply as confirmation. Name the workbook and worksheet.
+
+Outbound syncs are created by copying an existing sync to this plugin (Outbound Step 1 in `configure-syncs.md`). If none exists, the user creates one in the Omnata UI first.
 
 ## Notes
 
-- Requires Microsoft Graph permissions on each SharePoint site. Outbound needs `Sites.ReadWrite.All` / `Files.ReadWrite.All` (or per-site write role); inbound only needs read.
 - Excel has no change events. Rows deleted from a file only disappear after a Full Refresh.
-- The `selected_file` value is a file identifier from a dynamic dropdown; copy it from a UI-created sync.
-
-## Sources
-
-- Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/ms_excel/README.md` (agrees on Replace outbound).
-- Not verified: which multi-file mode exposes `primary_key_columns`, the exact `selected_file` value format, and whether the docs describe the mode values identically.
+- `selected_file` is a file identifier from a dynamic dropdown. Copy it from a sync created in the UI.

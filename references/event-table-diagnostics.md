@@ -12,8 +12,8 @@ sync run lifecycle timelines, and recurring error patterns.
 
 ## When to use this reference
 
-Use this **after** the primary monitoring workflows (`monitoring-sync-status.md`,
-`monitoring-outbound.md`, `monitoring-inbound.md`, etc.) have surfaced an error. This reference adds:
+Use this **after** the primary workflows (`references/sync-management.md`,
+`references/connection-management.md`, etc.) have surfaced an error. This reference adds:
 
 - Full Python stack traces (not available in `DATA_VIEWS`)
 - The exact code path and function where a sync failed
@@ -82,7 +82,7 @@ in this list.
 
 If multiple app names appear, ask the user which installation to diagnose.
 
-> **Note:** Connector plugin apps (e.g. `OMNATA_SALESFORCE_PLUGIN`, `OMNATA_HUBSPOT_PLUGIN`) always contain `PLUGIN` in their name. They emit their own events to the same event table under their own app name. The workflows in this file focus on `OMNATA_SYNC_ENGINE` events. For plugin-level events (credential updates, API configuration, connection tests), filter on `ILIKE '%PLUGIN%'` — see "Step 4b: Secret and credential update events" in `references/monitoring-connections.md`.
+> **Note:** Connector plugin apps (e.g. `OMNATA_SALESFORCE_PLUGIN`, `OMNATA_HUBSPOT_PLUGIN`) always contain `PLUGIN` in their name. They emit their own events to the same event table under their own app name. The workflows in this file focus on `OMNATA_SYNC_ENGINE` events. For plugin-level events (credential updates, API configuration, connection tests), filter on `ILIKE '%PLUGIN%'` — see "Step 4b: Secret and credential update events" in `references/connection-management.md`.
 
 ### Step 2: Verify Omnata Events Exist
 
@@ -262,7 +262,7 @@ For a healthy **inbound** run, the lifecycle milestones are:
 9. `sync_run_inbound_maintaining_normalized_views` — updating normalized views
 10. `sync_run_complete` — finished (includes `omnata.run_health_state`)
 
-If the run failed at phases 7–9, the root cause is likely a normalized view or schema problem rather than a sync/stream data failure. After extracting the stack trace here, route to the **Normalized View Troubleshooting** section in `references/monitoring-inbound.md`.
+If the run failed at phases 7–9, the root cause is likely a normalized view or schema problem rather than a sync/stream data failure. After extracting the stack trace here, route to the **Normalized View Troubleshooting** section (Part 2) in `references/sync-management.md`.
 
 If the run failed, the timeline will stop at the phase where the error occurred — this
 tells you whether the failure was during initialization, staging, syncing, or post-processing.

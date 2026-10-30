@@ -515,7 +515,7 @@ First create the location and privileges for this sync's `schemas_needed` (see "
 
 Then pass the accepted object as `INBOUND_STORAGE_LOCATION` when calling `CONFIGURE_OMNATA_INBOUND_SYNC` (`references/configure-syncs.md`). When configuring many syncs in one go, preview them all together before creating any.
 
-**Changing an existing sync's location** (re-send its full configuration, or use `SET_INBOUND_SYNC_LOCATION` in `references/actions.md`):
+**Changing an existing sync's location** (re-send its full configuration, or use `SET_INBOUND_SYNC_LOCATION` in `references/sync-management.md`):
 - It takes effect at the next run. Until then the stored location (`INBOUND_STORAGE_CONFIGURATION`) changes, but the applied location (`INBOUND_STORAGE_LOCATION_APPLIED`) doesn't
 - That run moves the existing tables and views (it doesn't copy them) and deletes the old ones. Open branches move too
 - Suggest one run straight away to confirm the move

@@ -7,8 +7,8 @@ description: "Create or update Omnata syncs programmatically via CONFIGURE_OMNAT
 
 Create or update syncs programmatically using stored procedures. This reference covers:
 
-- **Outbound syncs** (push data from Snowflake to an external app) -- organized by plugin
-- **Inbound syncs** (pull data from an external app into Snowflake) -- procedure reference, examples, and use-case workflows
+- **Outbound syncs** (push data from Snowflake to an external app); organized by plugin
+- **Inbound syncs** (pull data from an external app into Snowflake); procedure reference, examples, and use-case workflows
 
 Both procedures are **idempotent**: if the `sync_slug` already exists they update the sync;
 otherwise they create a new one.
@@ -21,7 +21,33 @@ otherwise they create a new one.
 
 **Test or production.** Before creating a sync, ask: "Are you trying this out on a test environment first, or going straight to your production environment?" (skip it if the request already says). Then follow "Asking the user" in `references/branching.md` to recommend either branching (strict config promotion) or separate standalone syncs (environment segregation for data). If branching is chosen, the main sync must use a production connection and be created before any branch.
 
-**Plugin pages.** Plugin-specific sync parameters, streams, strategies and known quirks are in `references/plugins/<plugin_id>.md` (index in `references/plugins/README.md`). Read the plugin's page before building a sync.
+**Plugin capabilities come from the installed apps.** Look up what a plugin supports in Snowflake before you build a sync. Don't rely on a hard-coded list; the apps are always current for the installed version.
+
+Plugin-level capabilities (directions, outbound strategies, target types, connectivity, filtering, docs link, version). An empty `SUPPORTED_OUTBOUND_STRATEGIES` means the plugin has no outbound support.
+
+```sql
+SELECT PLUGIN_FQN, PLUGIN_NAME, CURRENT_VERSION, SUPPORTS_INBOUND,
+       SUPPORTS_INBOUND_FILTERING, SUPPORTED_OUTBOUND_STRATEGIES,
+       OUTBOUND_TARGET_TYPES, SUPPORTED_CONNECTIVITY_OPTIONS, DOCS_URL
+FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.PLUGIN
+WHERE PLUGIN_FQN = '<plugin_fqn>';
+```
+
+Stream-level capabilities (streams, supported strategies, primary keys, cursors) come from an existing inbound sync to the same plugin. Each entry in the sync's included streams has a stream object with the supported strategies, primary key and cursor.
+
+```sql
+SELECT f.key AS stream_name,
+       f.value:stream:supported_sync_strategies AS supported_strategies,
+       f.value:stream:source_defined_primary_key AS primary_key,
+       f.value:stream:default_cursor_field AS default_cursor
+FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC s,
+     LATERAL FLATTEN(s.INBOUND_STREAMS_CONFIGURATION:included_streams) f
+WHERE s.PLUGIN_FQN = '<plugin_fqn>' AND s.SYNC_DIRECTION = 'inbound';
+```
+
+If no inbound sync to the plugin exists, take stream names from the plugin page's notes or have the user pick streams in the Omnata UI. Copy sync parameters and field mappings from an existing sync's `SYNC_PARAMETERS` and `OUTBOUND_FIELD_MAPPINGS`.
+
+**Plugin pages.** `references/plugins/<plugin_id>.md` (index in `references/plugins/README.md`) holds only what the apps don't expose: sync parameter meanings, gotchas, required approaches and warnings. Read it before building a sync. For explanations and vendor-side setup, give the user the plugin's `DOCS_URL`.
 
 ---
 
@@ -87,7 +113,13 @@ column definition.
 
 ### Step 3: Call CONFIGURE_OMNATA_OUTBOUND_SYNC
 
-The procedure uses **named parameters** for easier handling of optional parameters. All OBJECT parameters can be constructed using `OBJECT_CONSTRUCT(key1,value1,key2,value2)` or `PARSE_JSON($${}$$)`.
+> **Warning: updating a live sync.** Reusing an existing `sync_slug` replaces that sync's strategy, field mappings and source table, and the next run sends data with the new settings. Before calling it for an existing slug:
+>
+> 1. Query and show the sync's current settings (Outbound Step 1).
+> 2. Show the new settings next to them.
+> 3. Stop, and wait for the user's explicit yes. Don't continue on an unclear reply.
+
+Call it with **named parameters** (`=>`), using the names in the table below. All OBJECT parameters can be constructed using `OBJECT_CONSTRUCT(key1,value1,key2,value2)` or `PARSE_JSON($${}$$)`.
 
 #### Procedure Signature
 
@@ -98,9 +130,9 @@ See https://docs.omnata.com/omnata-product-documentation/omnata-sync-for-snowfla
 | `sync_slug` | VARCHAR | Yes | Kebab-case identifier. If exists, updates instead of creating. |
 | `sync_name` | VARCHAR | Yes | Human-readable display name |
 | `connection_slug` | VARIANT | Yes | The connection slug for a sync or branch. Can be either a string (simple sync) or an object (multi-account or branching). In either case, always cast to VARIANT |
-| `sync_parameters` | OBJECT | Yes | Plugin-specific parameters (see plugin sections below) |
+| `sync_parameters` | OBJECT | Yes | Plugin-specific parameters (see the plugin's page) |
 | `sync_schedule` | OBJECT | Yes | Schedule configuration |
-| `sync_strategy_name` | VARCHAR | Yes | Strategy name (plugin-specific, see plugin sections below) |
+| `sync_strategy_name` | VARCHAR | Yes | Strategy name, from `SUPPORTED_OUTBOUND_STRATEGIES` in `DATA_VIEWS.PLUGIN` |
 | `field_mappings` | OBJECT | Yes | Field mapping or Jinja template configuration |
 | `source_table` | OBJECT | Yes | Source table reference (database, schema, table, id_column) |
 | `sync_tuning_parameters` | OBJECT | No | Tuning parameters (default NULL) |
@@ -116,6 +148,16 @@ See https://docs.omnata.com/omnata-product-documentation/omnata-sync-for-snowfla
 | `branch_outbound_branch_record_filter` | OBJECT | No | Branch record filter (default NULL) |
 | `raise_errors` | BOOLEAN | No | Whether to raise errors (default FALSE, meaning 'success' flag and 'data'/'error' flags are returned) |
 | `current_user` | VARCHAR | No | Override current user (default NULL) |
+
+#### Jinja template preview
+
+When the field mappings use `mapper_type` `jinja_template`, always preview the rendered output before deploying. Query a few sample rows from the source table:
+
+```sql
+SELECT * FROM <source_database>.<source_schema>.<source_table> LIMIT 3;
+```
+
+Substitute the sample values into the template by hand, show the user the result as it will appear in the destination, and confirm it before continuing.
 
 #### Common Parameters (All Plugins)
 
@@ -142,11 +184,13 @@ OBJECT_CONSTRUCT(
 
 ### Step 4: Resume and Run
 
+> **Warning: starts sending data.** Resuming or running an outbound sync sends data to the destination app. Confirming the settings in Step 3 doesn't cover this. Show the user the `RESUME_SYNC` and `RUN_SYNC` calls, and wait for a separate yes, such as "yes, run it now".
+
 After creation, the sync starts in `PENDING` state. Resume it to activate the schedule,
 then optionally trigger an immediate run:
 
 ```sql
--- Activate the schedule
+-- Resume the sync: moves it out of PENDING or PAUSED so it runs on its schedule
 CALL OMNATA_SYNC_ENGINE.API.RESUME_SYNC('<sync_slug>', 'main');
 
 -- Trigger immediate run
@@ -174,153 +218,9 @@ ORDER BY RUN_START_DATETIME DESC LIMIT 1;
 
 ---
 
-## Outbound Plugin: Slack
+## Plugin-specific outbound configuration
 
-### Strategy
-
-- **Strategy name:** `'Post Message'`
-- **Behaviour:** Posts a message into a Slack channel on record create. Does not act on update/delete/unchanged.
-
-### Sync Parameters
-
-The `sync_parameters` must include the target channel:
-
-```sql
-OBJECT_CONSTRUCT(
-    'channel', OBJECT_CONSTRUCT(
-        'value', '<channel-name>',
-        'metadata', OBJECT_CONSTRUCT(
-            'id', '<SLACK_CHANNEL_ID>',
-            'name', '<channel-name>',
-            'is_channel', TRUE
-        )
-    )
-)
-```
-
-Get the channel ID and name from an existing Slack sync's `SYNC_PARAMETERS`.
-
-### Field Mappings (Jinja Template)
-
-Slack syncs use `mapper_type: 'jinja_template'` to compose the message body. The template
-has access to `row['COLUMN_NAME']` for each column in the source table.
-
-```sql
-OBJECT_CONSTRUCT(
-    'mapper_type', 'jinja_template',
-    'jinja_template', '{{ row[''FIRST_NAME''] }} {{ row[''LAST_NAME''] }} ({{ row[''EMAIL''] }}) from {{ row[''ORGANIZATION''] }}.\nInstalled {{ row[''PRODUCT_NAME''] }} in {{ row[''ACCOUNT''] }} ({{ row[''REGION''] }}).',
-    'additional_column_expressions', OBJECT_CONSTRUCT()
-)
-```
-
-### Preview the Jinja Template
-
-Before deploying, **always preview the rendered message** so the user can see exactly what
-will appear in Slack. Query a sample row from the source table and manually substitute the
-column values into the template:
-
-```sql
-SELECT * FROM <source_database>.<source_schema>.<source_table> LIMIT 3;
-```
-
-Then render the template by replacing `{{ row['COLUMN'] }}` with the actual values from
-a sample row. Present the result to the user as the message that will be posted to Slack,
-and confirm it looks correct before proceeding.
-
-### Full Example
-
-```sql
-CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_OUTBOUND_SYNC(
-    'my-events-to-slack',
-    'My Events to Slack',
-    'omnata-slack'::VARIANT,
-    OBJECT_CONSTRUCT(
-        'channel', OBJECT_CONSTRUCT(
-            'value', 'lead-marketing-activity',
-            'metadata', OBJECT_CONSTRUCT(
-                'id', 'C02EG7V3QJF',
-                'name', 'lead-marketing-activity',
-                'is_channel', TRUE
-            )
-        )
-    ),
-    OBJECT_CONSTRUCT(
-        'mode', 'snowflake_task',
-        'sync_frequency', '15 5,9,13 * * * Australia/NSW',
-        'sync_frequency_name', 'Custom',
-        'time_limit_mins', 240,
-        'warehouse', 'COMPUTE_WH'
-    ),
-    'Post Message',
-    OBJECT_CONSTRUCT(
-        'mapper_type', 'jinja_template',
-        'jinja_template', '{{ row[''FIRST_NAME''] }} {{ row[''LAST_NAME''] }} ({{ row[''CONSUMER_EMAIL''] }}) from {{ row[''CONSUMER_ORGANIZATION''] }}.\nInstalled {{ row[''LISTING_DISPLAY_NAME''] }} in {{ row[''CONSUMER_ACCOUNT_NAME''] }} ({{ row[''SNOWFLAKE_REGION''] }}), account {{ row[''CONSUMER_ACCOUNT_LOCATOR''] }}.',
-        'additional_column_expressions', OBJECT_CONSTRUCT()
-    ),
-    OBJECT_CONSTRUCT(
-        'database', 'SCRATCH',
-        'schema', 'PRODUCTION',
-        'table', 'LISTING_EVENTS_GET',
-        'id_column', 'UNIQUE_ID'
-    ),
-    OBJECT_CONSTRUCT(),
-    [],
-    FALSE, FALSE, NULL::OBJECT, NULL::VARCHAR, NULL::VARCHAR,
-    NULL::VARCHAR, 'START_EMPTY', 'CONTINUE', NULL::OBJECT, FALSE, NULL::VARCHAR
-);
-```
-
----
-
-## Outbound Plugin: Salesforce
-
-> **Status:** Supported via this procedure, but no worked example yet. Follow the same
-> workflow: pull configuration from an existing Salesforce sync and adapt.
-
-### Strategy Names
-
-- `'Create'` -- insert new records
-- `'Update'` -- update existing records (requires APP_IDENTIFIER mapping)
-- `'Upsert'` -- create or update based on external ID
-- `'Delete'` -- delete records in Salesforce
-
-### Field Mappings
-
-Salesforce syncs typically use `mapper_type: 'field_mapping_selector'` with structured
-field-to-field mappings. Inspect an existing sync's `OUTBOUND_FIELD_MAPPINGS` for the
-exact structure.
-
----
-
-## Outbound Plugin: HubSpot
-
-> **Status:** Supported via this procedure, but no worked example yet. Follow the same
-> workflow: pull configuration from an existing HubSpot sync and adapt.
-
-### Strategy Names
-
-- `'Create'` -- insert new records
-- `'Update'` -- update existing records
-- `'Upsert'` -- create or update
-
-### Field Mappings
-
-HubSpot syncs typically use `mapper_type: 'field_mapping_selector'`. Inspect an existing
-sync's `OUTBOUND_FIELD_MAPPINGS` for the exact structure.
-
----
-
-## Outbound: Other Plugins
-
-> **Status:** Not yet documented. For any other plugin, use the same workflow:
->
-> 1. Check for existing syncs to that plugin (Step 1)
-> 2. If none exist, advise creating one via the Omnata UI first
-> 3. Pull the configuration from the UI-created sync
-> 4. Adapt and deploy using `CONFIGURE_OMNATA_OUTBOUND_SYNC`
->
-> To add documentation for a new plugin, add a new `## Outbound Plugin: <Name>` section
-> above this block following the same structure as the Slack section.
+Sync parameters, field mappings, required identifier fields, warnings and any worked examples for each plugin are on its page in `references/plugins/<plugin_id>.md`. Read it before Step 3. Strategies and target types come from `DATA_VIEWS.PLUGIN` (see "Plugin capabilities come from the installed apps" above).
 
 ---
 
@@ -330,7 +230,7 @@ sync's `OUTBOUND_FIELD_MAPPINGS` for the exact structure.
 |---|---|---|
 | `NULL identifier(s) found` | ID column contains NULL values | Fix the source view to ensure ID column is never NULL (use COALESCE) |
 | `Invalid argument types` | Used PARSE_JSON instead of OBJECT_CONSTRUCT | Use OBJECT_CONSTRUCT() for all OBJECT parameters |
-| `named arguments do not match` | Tried named parameter syntax | Use positional parameters only |
+| `named arguments do not match` | A parameter name in a named call doesn't match the procedure | Use the exact parameter names from the Procedure Signature table, or pass the parameters positionally in that order |
 | Sync stays in PENDING | Not resumed after creation | Call RESUME_SYNC |
 | HEALTH_STATE = FAILED after run | Check GLOBAL_ERROR in SYNC_RUN | Query the latest run's GLOBAL_ERROR for details |
 
@@ -340,15 +240,17 @@ sync's `OUTBOUND_FIELD_MAPPINGS` for the exact structure.
 
 Create or update inbound syncs programmatically using `CONFIGURE_OMNATA_INBOUND_SYNC`. This procedure is the single entry point for all inbound sync configuration, whether creating a simple sync, bulk-adding streams, or managing test/prod environments.
 
-The procedure is **idempotent**: calling it with an existing `SYNC_SLUG` updates the sync rather than creating a duplicate. It expects the **full configuration** each time. Omitting a stream from `STREAM_NAMES` removes it from the sync. When updating an existing sync, show the user which streams are kept and which would be removed, and confirm before calling.
+The procedure is **idempotent**: calling it with an existing `SYNC_SLUG` updates the sync rather than creating a duplicate. It expects the **full configuration** each time.
+
+> **Warning: before updating an existing sync.** Omitting a stream from `STREAM_NAMES` removes it from the sync. Show the user which streams are kept and which would be removed, and get their confirmation before calling.
 
 ## Use cases
 
-- **Simple sync creation** -- programmatically create an inbound sync for one or more streams
-- **Bulk stream setup** -- configure syncs with many streams (10+) from a file or list
-- **Source control and CI/CD** -- store sync configuration in version control and deploy via pipeline
-- **Test/prod environment management** -- use branching to manage separate configurations per environment
-- **Programmatic management** -- create and maintain many syncs across plugins
+- **Simple sync creation**: programmatically create an inbound sync for one or more streams
+- **Bulk stream setup**: configure syncs with many streams (10+) from a file or list
+- **Source control and CI/CD**: store sync configuration in version control and deploy via pipeline
+- **Test/prod environment management**: use branching to manage separate configurations per environment
+- **Programmatic management**: create and maintain many syncs across plugins
 
 ## Prerequisites
 
@@ -363,9 +265,9 @@ Use **named parameters** (`=>`). All OBJECT parameters can be constructed using 
 
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
-    SYNC_SLUG          => 'my-salesforce-inbound',
-    SYNC_NAME          => 'Salesforce to Snowflake',
-    CONNECTION_SLUG    => 'my-salesforce-connection'::VARIANT,
+    SYNC_SLUG          => '<plugin_id>-inbound',
+    SYNC_NAME          => '<Plugin Name> to Snowflake',
+    CONNECTION_SLUG    => '<connection_slug>'::VARIANT,
     STREAM_NAMES       => ['Account', 'Contact', 'Opportunity'],
     SYNC_STRATEGY      => 'Auto'::VARIANT,
     STORAGE_BEHAVIOUR  => 'merge'::VARIANT,
@@ -383,9 +285,9 @@ CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
 
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
-    SYNC_SLUG          => 'hubspot-hourly',
-    SYNC_NAME          => 'HubSpot Hourly Inbound',
-    CONNECTION_SLUG    => 'hubspot-prod'::VARIANT,
+    SYNC_SLUG          => '<plugin_id>-hourly',
+    SYNC_NAME          => '<Plugin Name> Hourly Inbound',
+    CONNECTION_SLUG    => '<connection_slug>'::VARIANT,
     STREAM_NAMES       => ['contacts', 'companies', 'deals'],
     SYNC_STRATEGY      => 'Auto'::VARIANT,
     STORAGE_BEHAVIOUR  => 'merge'::VARIANT,
@@ -560,7 +462,7 @@ After creating the sync, trigger a run:
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.RUN_SYNC(
     NULL,                    -- SYNC_ID (null when using slug)
-    'my-salesforce-inbound', -- SYNC_SLUG
+    '<plugin_id>-inbound', -- SYNC_SLUG
     'main',                  -- BRANCH_NAME
     'external',              -- RUN_SOURCE_NAME
     OBJECT_CONSTRUCT(),      -- RUN_SOURCE_METADATA
@@ -581,20 +483,26 @@ FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC_RUN
 WHERE SYNC_RUN_ID = <sync_run_id>;
 ```
 
-For an inbound sync, also confirm records landed in the normalized view, `OMNATA_SYNC_ENGINE.INBOUND_NORMALIZED."<sync_slug>_main_<stream_name>"`.
+For an inbound sync, also confirm records landed in the stream's normalized view in `OMNATA_SYNC_ENGINE.INBOUND_NORMALIZED`. The view is named after the sync slug, the branch (main) and the stream name, joined by underscores.
 
 If the run failed, explain the per-stream or global error, check the plugin page for known causes, and see `references/error-knowledge-base.md`. A failed first run on a new connection is usually about the data or the sync settings, not the connection.
 
 ## Deleting a sync
 
-To remove a sync (for example a test sync), use `DELETE_SYNC('<sync_slug>', NULL)`. **It is irreversible and also deletes the sync's raw tables and normalized views**, so confirm the slug with the user and that the data isn't needed before calling it. See "Delete a Sync" and "Clean Up Syncs and Connections" in `references/actions.md`.
+> **Warning: irreversible.** `DELETE_SYNC` permanently deletes the sync and its raw tables and normalized views. The data can't be recovered, and anything downstream that reads those tables loses it too. Before calling it:
+>
+> 1. List the tables and views that will be deleted.
+> 2. Ask whether anything downstream uses them, such as dbt models, tasks, dashboards or other syncs.
+> 3. Ask the user to type the exact sync slug back to confirm. Stop here until they do; this is a stopping point, also in a bulk clean-up.
+
+To remove a sync, such as a test sync, call `DELETE_SYNC(SYNC_SLUG, BRANCH_NAME)` with the slug and NULL for the branch, only after the user has confirmed that exact slug. See Delete a Sync in `references/sync-management.md`, and Clean Up Syncs and Connections in `references/connection-management.md`.
 
 ## Inbound notes
 
-- The `inbound_storage_location` uses Omnata template variables (`{{column_name}}`, `{{sync_slug}}`, `{{branch_name}}`, `{{stream_name}}`). These are not Snowflake or SQL variables; do not replace them.
+- The `inbound_storage_location` uses Omnata template variables in double curly braces: column_name, sync_slug, branch_name and stream_name. These are not Snowflake or SQL variables; leave them as they are.
 - If the user cares where the data lands (database, schema or table naming), follow `references/data-management.md` before calling the procedure. When configuring a sync, check whether a custom default template is set, then ask whether to use the app default, the custom default (only if one is set) or a custom location for this sync. Omitting `INBOUND_STORAGE_LOCATION` gives the built-in app defaults, not the custom default from Settings, so pass that explicitly if one is set.
-- Setting `"mode":"manual"` means the sync will not auto-schedule. The user triggers runs manually or sets a schedule later.
-- The `sync_parameters` field is plugin-specific (e.g. NetSuite may not use any, but other plugins may require configuration here).
+- A schedule with mode set to manual means the sync will not auto-schedule. The user triggers runs manually or sets a schedule later.
+- The `sync_parameters` field is plugin-specific. Some plugins, such as NetSuite, may not use any; others require configuration here.
 
 ---
 
@@ -610,10 +518,10 @@ Before generating the SQL, collect these from the user:
 
 | Parameter | How to find it |
 |---|---|
-| **Omnata database name** | Usually `OMNATA_SYNC_ENGINE` -- confirm with `SHOW DATABASES LIKE '%OMNATA%'` |
+| **Omnata database name** | Usually `OMNATA_SYNC_ENGINE`: confirm with `SHOW DATABASES LIKE '%OMNATA%'` |
 | **Connection slug** | `SELECT CONNECTION_SLUG, CONNECTION_NAME, PLUGIN_FQN FROM <database>.DATA_VIEWS.CONNECTION` |
 | **Stream list** | Ask the user how they want to provide it (see Step 2) |
-| **Sync slug** | Kebab-case identifier (e.g. `netsuite-prod-to-snowflake`) -- the user names this |
+| **Sync slug** | Kebab-case identifier (e.g. `netsuite-prod-to-snowflake`); the user names this |
 | **Sync name** | Human-readable (e.g. `NetSuite Production to Snowflake`) |
 | **Warehouse** | Which warehouse to use for sync execution |
 | **Sync strategy** | `'Auto'` (default), `'Incremental'`, or `'Full Refresh'` (case-sensitive) |
@@ -623,11 +531,11 @@ Before generating the SQL, collect these from the user:
 
 Ask the user how they'd like to provide the list of streams/tables to sync:
 
-1. **Excel file** (.xlsx) -- read the file, extract table names from the first column
-2. **CSV file** -- read and extract from the relevant column
-3. **Paste** -- user pastes a list directly into chat (one per line, or comma-separated)
-4. **From existing sync** -- copy streams from another sync already configured in the system
-5. **From the plugin catalog** -- use the full set of available streams from the connection
+1. **Excel file** (.xlsx); read the file, extract table names from the first column
+2. **CSV file**: read and extract from the relevant column
+3. **Paste**: user pastes a list directly into chat (one per line, or comma-separated)
+4. **From existing sync**: copy streams from another sync already configured in the system
+5. **From the plugin catalog**: use the full set of available streams from the connection
 
 ### Processing the stream list
 
@@ -645,8 +553,8 @@ Build a JSON object mapping each stream name to its primary key column(s):
 
 **Important notes on primary keys:**
 
-- `["id"]` is a safe default for most streams -- if the plugin has a source-defined PK, it will override your value automatically
-- Some streams use composite PKs (e.g. transaction line tables may use `["transaction","id"]` or `["journal","line"]`) -- the plugin handles this
+- A primary key of id is a safe default for most streams. A source-defined PK from the plugin overrides it automatically.
+- Some streams use composite PKs (e.g. transaction line tables may use transaction plus id, or journal plus line); the plugin handles this
 - Streams without a source-defined PK **require** an explicit PK or the proc will fail
 - After sync creation, always run the PK reconciliation query (Bulk Step 5) to verify
 
@@ -657,7 +565,7 @@ Use the procedure reference above with the gathered parameters. For bulk setups,
 ## Bulk Step 5: PK reconciliation (post-creation)
 
 After the sync is created, verify the actual PKs assigned. The plugin provides source-defined
-PKs that override the `["id"]` placeholder:
+PKs that override the id placeholder:
 
 ```sql
 -- Review all assigned PKs
@@ -683,15 +591,15 @@ WHERE s.SYNC_SLUG = '<SYNC_SLUG>'
 ORDER BY stream_name;
 ```
 
-Present the non-`["id"]` streams to the user for review.
+Present the streams whose key isn't the id placeholder to the user for review.
 
 ## Bulk Step 6: Report results
 
 Present to the user:
 
-1. **Success/failure** of the proc call
-2. **Stream configuration summary** from the reconciliation query -- this will show the actually configured cursor field(s) and primary key field for each stream.
-3. **Next steps**: trigger the first run (see "Running and verifying a sync" above)
+1. **Success or failure** of the proc call
+2. **Stream configuration summary** from the reconciliation query; this will show the actually configured cursor field(s) and primary key field for each stream.
+3. **Next steps**: trigger the first run (see Running and verifying a sync above)
 
 ---
 
@@ -699,9 +607,12 @@ Present to the user:
 
 - After Outbound Step 1 if no existing syncs found (user must create one in UI first)
 - After Outbound Step 1 if the user only needed to understand the existing config
+- Before Outbound Step 3 when updating an existing sync: always stop for the user's explicit yes to the new settings
 - After Outbound Step 3 if the user wants to review the SQL before running
-- After Jinja preview (Slack) if the user wants to adjust the message template
+- After the Jinja template preview if the user wants to adjust the template
 - After Outbound Step 5 for full confirmation
 - After inbound proc call if the user wants to review the result before running
 - After Bulk Step 4 if the user wants to review removed streams before continuing
 - After Bulk Step 6 for full confirmation
+- Before every `DELETE_SYNC`: list what will be deleted and wait for the user to type the exact slug
+- Before the first `RESUME_SYNC` or `RUN_SYNC` after creating or changing an outbound sync: wait for a separate yes to start sending data
