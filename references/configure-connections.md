@@ -1,6 +1,6 @@
 ---
 name: omnata-configure-connections
-description: "Create an Omnata connection to an app, with CoCo doing the setup and the user entering credentials in the Omnata UI (recommended) or through SQL, then hand off to creating a sync on it. Covers API key, token, service account and OAuth methods, from BEGIN_CONNECTION_CREATION to a tested connection, and editing existing connections. Use when: user wants CoCo to set up Omnata syncs end to end instead of the UI; has just installed the Sync Engine or a plugin; wants to sync an app that has no Omnata connection yet; wants to create, add or edit an Omnata connection or its credentials. Triggers: set up an Omnata sync end to end, configure Omnata for me, I just installed the Omnata plugin, create Omnata connection, connect Omnata to <app>, add another Omnata connection, edit Omnata connection, rotate Omnata credentials, re-authorize Omnata OAuth, BEGIN_CONNECTION_CREATION, BEGIN_CONNECTION_EDIT, UPDATE_CONNECTION_OBJECTS, COMPLETE_CONNECTION_CREATION."
+description: "Create an Omnata connection to an app, with CoCo doing the setup and the user entering credentials in the Omnata UI (recommended) or through SQL, then hand off to creating a sync on it. Covers API key, token, service account and OAuth methods, from BEGIN_CONNECTION_CREATION to a tested connection, and editing existing connections. Use when: user wants CoCo to set up Omnata syncs end to end instead of the UI; has just installed the Sync Engine or a plugin; wants to sync an app that has no Omnata connection yet; wants to create, add or edit an Omnata connection or its credentials. Triggers: set up an Omnata sync end to end, I just installed the Omnata plugin, create Omnata connection, connect Omnata to <app>, add another Omnata connection, edit Omnata connection, rotate Omnata credentials, re-authorize Omnata OAuth, BEGIN_CONNECTION_CREATION, BEGIN_CONNECTION_EDIT, UPDATE_CONNECTION_OBJECTS, COMPLETE_CONNECTION_CREATION."
 ---
 
 # Configure Connections
@@ -40,7 +40,7 @@ The overall workflow is: install the app and plugin, **create a connection**, **
 **Signals to infer from the request:**
 - "Get my <app> data into Snowflake", "sync <app>", "push this table to <app>": they want a sync, so check for a connection first.
 - "I just installed it, what now?": no connection yet, so start here.
-- "Set it up for me", "do it without the UI", "automate this": they want CoCo to drive the whole workflow, so keep going step to step without stopping for confirmation except where a person is needed.
+- "Set up my Omnata sync for me", "do it without the Omnata UI", "automate this Omnata setup": they want CoCo to drive the whole workflow, so keep going step to step without stopping for confirmation except where a person is needed.
 - A named environment ("test", "prod", "sandbox", "dev") or account: decide whether an existing connection fits, or a new one is needed, and set the production flag (Step 1d). If the user mentions both a test and a production instance, read `references/branching.md`.
 
 **Check for an existing connection before creating one:**
@@ -155,7 +155,7 @@ Each plugin defines one or more connection methods. Each method has a name, a se
 CALL <PLUGIN_DATABASE>.PLUGIN.CONNECTION_FORM();
 ```
 
-It returns `{"success": true, "data": [<method>, ...]}`. For each method, use:
+It returns an OBJECT with `success` = `true` and `data` holding an array of methods. For each method, use:
 
 | Key | Meaning |
 |---|---|
@@ -201,7 +201,7 @@ CALL OMNATA_SYNC_ENGINE.API.BEGIN_CONNECTION_CREATION(
 
 Parameters are positional, in the order shown.
 
-On success it returns `{"success": true, "data": {...}}`. Keep these values from `data`:
+On success it returns an OBJECT with `success` = `true` and a `data` object. Keep these values from `data`:
 
 | Field | Used in |
 |---|---|
@@ -211,9 +211,11 @@ On success it returns `{"success": true, "data": {...}}`. Keep these values from
 | `SI_SPEC_NAME` | Approving the OAuth integration (OAuth only) |
 | `OAUTH_SECRET_NAME` | OAuth authorization (OAuth only) |
 
-On failure it returns `{"success": false, "error": "..."}`. A common one is `Connection with slug <slug> already exists`: pick a different slug, or edit the existing connection (see "Edit an existing connection" below).
+On failure it returns an OBJECT with `success` = `false` and an `error` message. A common one is `Connection with slug <slug> already exists`: pick a different slug, or edit the existing connection (see "Edit an existing connection" below).
 
 ## Step 3: Add connection parameters and credentials
+
+> **Note: where the credentials go.** Credentials entered here are stored by the plugin app in a Snowflake secret it owns. They leave Snowflake later, when Step 6 tests the connection and on every sync run, and go only to the app's API at the addresses in the approved external access specification. Tell the user this before they enter credentials.
 
 Follow the route the user chose in Step 0.
 
@@ -242,7 +244,7 @@ Only after the user has accepted the query-history risk (Step 0).
 `UPDATE_CONNECTION_OBJECTS` sends the method's field values to the plugin. The plugin uses them to work out the network addresses it needs and stores secrets in a Snowflake secret it owns.
 
 Shape of each object:
-- `connection_parameters`: non-secret fields, `{"<field>": {"value": "<value>"}}`.
+- `connection_parameters`: non-secret fields, an object keyed by field name, where each value is an object with a `value` key, e.g. `OBJECT_CONSTRUCT('<field>', OBJECT_CONSTRUCT('value', '<value>'))`.
 - `connection_secrets`: fields marked secret, same shape.
 - `oauth_values`: OAuth methods only (see Step 3b). Otherwise pass an empty object.
 
@@ -406,6 +408,12 @@ After Route A, `PLUGIN_CHECK_CONNECTION_PROGRESS` still shows `oauth_secret_conf
 
 ## Step 6: Complete the connection
 
+> **Warning: sends credentials outside Snowflake.** `COMPLETE_CONNECTION_CREATION` runs a live connection test. The plugin sends the stored credentials over the network, out of Snowflake, to the third-party app's API at the addresses approved in the connection's external access specification. Then it activates the connection. Before calling it:
+>
+> 1. Reiterate the app name and the exact network addresses from the external access specification an admin approved in Step 4.
+> 2. Tell the user which app and network addresses will receive the credentials.
+> 3. Stop, and wait for their explicit yes.
+
 ```sql
 CALL OMNATA_SYNC_ENGINE.API.COMPLETE_CONNECTION_CREATION(<CONNECTION_IN_PROGRESS_ID>);
 ```
@@ -438,9 +446,11 @@ FROM OMNATA_SYNC_ENGINE.DATA_VIEWS.SYNC_RUN
 WHERE SYNC_RUN_ID = <SYNC_RUN_ID>;
 ```
 
-Explain the error in plain language, in the user's language, and check the plugin page's notes for known causes. Then tell the user what to change in the app or the sync, and rerun. A failed first run on a new connection is usually about the data or the sync settings, not the connection.
+Explain the error in plain language, and check the plugin page's notes for known causes. Then tell the user what to change in the app or the sync, and rerun. A failed first run on a new connection is usually about the data or the sync settings, not the connection.
 
-To remove a test sync, `DELETE_SYNC('<sync_slug>', NULL)` deletes the sync record, its raw table and its normalized view in one call, and leaves the connection and other syncs alone. For a full clean-up of syncs and a connection, see "Clean Up Syncs and Connections" in `references/actions.md`.
+> **Warning: irreversible.** `DELETE_SYNC` permanently deletes the sync, its raw table and its normalized view. Before calling it, list those objects for the user, and get their explicit yes to that exact slug. Stop and wait for the answer.
+
+Only after that confirmation: to remove a test sync, `DELETE_SYNC('<sync_slug>', NULL)` deletes the sync record, its raw table and its normalized view in one call, and leaves the connection and other syncs alone. For a full clean-up of syncs and a connection, see "Clean Up Syncs and Connections" in `references/connection-management.md`.
 
 ## Edit an existing connection
 
@@ -496,4 +506,4 @@ To abandon an edit, use `CANCEL_CONNECTION_CREATION('<CONNECTION_SLUG>')`. The e
 ## Notes
 
 - Everything here runs through the Sync Engine's API procedures (`OMNATA_SYNC_ENGINE.API`), which run as the app. CoCo never creates network rules, integrations or secrets directly; the plugin owns those.
-- All procedures return `{"success": ..., "data" | "error": ...}` instead of throwing. Always check `success`.
+- All procedures return an OBJECT with `success`, plus `data` on success or `error` on failure, instead of throwing. Always check `success`.

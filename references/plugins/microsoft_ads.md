@@ -2,42 +2,20 @@
 
 | | |
 |---|---|
-| Plugin ID | `microsoft_ads` |
-| Plugin FQN | `OMNATA__MICROSOFT_ADS` (as shown in `DATA_VIEWS.CONNECTION.PLUGIN_FQN`) |
-| Directions | Inbound: Yes. Outbound: No |
-| Docs | `apps/microsoft_ads/README.md` |
+| Plugin FQN | `OMNATA__MICROSOFT_ADS` |
+| Page | `microsoft_ads.md` |
+
+Look up directions, outbound strategies and stream strategies from the installed apps first ("Plugin capabilities come from the installed apps" in `configure-syncs.md`). Point the user to the plugin's `DOCS_URL` for explanations and setup.
 
 ## Inbound
 
 **Sync parameters** (`SYNC_PARAMETERS`):
-- `account_ids` (required, multi-select): Microsoft Advertising account IDs to sync.
-- `reporting_timezone` (required): timezone for metric reports, from a static list.
+- `account_ids` (required, multi-select): the Microsoft Advertising account IDs to sync, as numeric IDs in string form.
+- `reporting_timezone` (required): the timezone for metric reports. It must match a value from the plugin's timezone list.
 - `backfill_days` (optional, default `365`): days of history loaded on the first sync of a metric report.
 
-**Streams**: Static catalog. Entity streams `accounts`, `campaigns`, `ad_groups`, `ads` (primary key `Id`; `ad_groups` depends on `campaigns`, `ads` on `ad_groups`). Metric report streams such as `account_performance`, `campaign_performance`, `ad_group_performance`, `keyword_performance`, `search_query_performance`. All streams have a source-defined primary key and `source_defined_cursor` true.
-
-**Sync strategies supported**: Entity streams are `Full Refresh` only. Metric report streams support `Full Refresh` and `Incremental` (on the report time period).
-
-```sql
-CALL OMNATA_SYNC_ENGINE.API.CONFIGURE_OMNATA_INBOUND_SYNC(
-    SYNC_SLUG          => 'microsoft_ads-inbound',
-    SYNC_NAME          => 'Microsoft Ads to Snowflake',
-    CONNECTION_SLUG    => '<connection_slug>'::VARIANT,
-    STREAM_NAMES       => ['campaigns', 'ad_groups', 'campaign_performance', 'keyword_performance'],
-    SYNC_STRATEGY      => 'Auto'::VARIANT,
-    STORAGE_BEHAVIOUR  => 'merge'::VARIANT,
-    SYNC_PARAMETERS    => OBJECT_CONSTRUCT('account_ids', ARRAY_CONSTRUCT('<account_id>'), 'reporting_timezone', '<timezone>', 'backfill_days', '365'),
-    SYNC_SCHEDULE      => OBJECT_CONSTRUCT('mode', 'manual', 'warehouse', '<warehouse>', 'time_limit_mins', 60),
-    RAISE_ERRORS       => true
-);
-```
+**Streams**: static. There are entity streams, such as `campaigns`, and metric report streams, such as `campaign_performance`. Some entity streams depend on others: `ad_groups` needs `campaigns`, and `ads` needs `ad_groups`. Primary keys and cursors are source-defined.
 
 ## Notes
 
-- Repo is named `bing-ads` but the plugin ID is `microsoft_ads`.
-- `account_ids` values are the numeric account IDs as strings; `reporting_timezone` must match a key in the plugin's timezone list.
-
-## Sources
-
-- Docs: `omnata-docs-gitbook/omnata-sync-for-snowflake/apps/microsoft_ads/README.md`
-- Default cursor field name for metric reports not explicitly set in stream definitions; valid `reporting_timezone` values not listed here.
+- The source repo is named bing-ads, but the plugin ID is `microsoft_ads`.

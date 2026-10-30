@@ -1,59 +1,61 @@
 # Plugin reference pages
 
-Per-plugin pages for connections and syncs. Each page follows `_TEMPLATE.md` and is verified against the plugin's behaviour and its docs page. Where the plugin and docs disagree, the page follows the plugin and notes the conflict under Sources.
+Per-plugin pages for connections and syncs. Each page follows `_TEMPLATE.md` and holds only what the installed apps don't expose: sync parameter meanings, gotchas, required approaches and warnings. Point users to the plugin's `DOCS_URL` for explanations and setup.
 
 `configure-connections.md` and `configure-syncs.md` keep the universal inbound and outbound procedure reference, and route plugin-specific detail to `references/plugins/<plugin_id>.md`.
 
 Outbound rule: outbound syncs can only be created from the definition of an existing sync to the same plugin. The outbound sections describe what the parameters and mappings mean, so CoCo can adapt a copied definition, not build one from scratch. Building outbound config without a template was investigated and parked: the plugin form and target-field discovery procedures are not granted to customer roles, and the configure procedure does not validate plugin-specific config.
 
-## Support matrix
+## Pages
 
-| Page | Plugin | Inbound | Outbound strategies |
-|---|---|---|---|
-| `activecampaign.md` | ActiveCampaign | Yes | None |
-| `aerobotics.md` | Aerobotics | Yes | None |
-| `aircall.md` | Aircall | Yes | None |
-| `airtable.md` | Airtable | Yes | Create, Update, Upsert, Replace |
-| `bamboohr.md` | BambooHR | Yes | None |
-| `claude.md` | Claude | Yes | None |
-| `clockify.md` | Clockify | Yes | None |
-| `confluence.md` | Confluence | Yes | None |
-| `contentful.md` | Contentful | Yes | None |
-| `databricks.md` | Databricks | Yes | None |
-| `dynamics_365_business_central.md` | Microsoft Dynamics 365 Business Central | Yes | None |
-| `dynamics_365_synapse_link.md` | Microsoft Dynamics 365 Synapse Link | Yes | None |
-| `entra_id.md` | Microsoft Entra ID | Yes | None |
-| `github.md` | GitHub | Yes | None |
-| `google_ads.md` | Google Ads | Yes | Not supported |
-| `google_sheets.md` | Google Sheets | Yes | Replace |
-| `hubspot.md` | Hubspot | Yes | Create, Upsert, Update, Delete |
-| `infor_datalake.md` | Infor Datalake | Yes | None |
-| `jira.md` | Jira | Yes | Create, Upsert |
-| `linkedin_ads.md` | LinkedIn Ads | Yes | Not supported |
-| `mailgun.md` | Mailgun | Yes | Send |
-| `marketo.md` | Marketo | No | Upsert, Update, Create |
-| `meta_marketing.md` | Meta Marketing | Yes | None |
-| `microsoft_ads.md` | Microsoft Ads (repo `plugin-bing-ads`) | Yes | None |
-| `monday.md` | Monday.com | Yes | Create, Upsert, Mirror |
-| `ms_excel.md` | MS Excel | Yes | Replace |
-| `mssql.md` | Microsoft SQL Server | Yes | None |
-| `mysql.md` | MySQL | Yes | Not supported |
-| `netsuite.md` | NetSuite | Yes | None |
-| `notion.md` | Notion | Yes | None |
-| `paypal_braintree.md` | PayPal Braintree | Yes | None |
-| `postgresql.md` | PostgreSQL | Yes | None |
-| `questdb.md` | QuestDB | Yes | None |
-| `reddit_ads.md` | Reddit Ads | Yes | None |
-| `salesforce.md` | Salesforce | Yes | Create, Upsert, Update, Mirror, Delete, Record Merge |
-| `sfmc.md` | Salesforce Marketing Cloud | Yes | Create, Upsert, Replace, Mirror |
-| `shopify.md` | Shopify | Yes | Create, Upsert, Update, Delete |
-| `slack.md` | Slack | Yes | Post Message |
-| `typeform.md` | Typeform | Yes | None |
-| `ukg_pro_wfm.md` | UKG Pro WFM | Yes | None |
-| `wise.md` | Wise | Yes | None |
-| `xero.md` | Xero | Yes | Create |
-| `zendesk_support.md` | Zendesk Support | Yes | Create, Upsert, Mirror, Update, Delete |
-| `zoho_crm.md` | Zoho CRM | Yes | Create, Update, Upsert |
+Directions and outbound strategies aren't listed here. Look them up in `DATA_VIEWS.PLUGIN` ("Plugin capabilities come from the installed apps" in `configure-syncs.md`).
+
+| Page | Plugin |
+|---|---|
+| `activecampaign.md` | ActiveCampaign |
+| `aerobotics.md` | Aerobotics |
+| `aircall.md` | Aircall |
+| `airtable.md` | Airtable |
+| `bamboohr.md` | BambooHR |
+| `claude.md` | Claude |
+| `clockify.md` | Clockify |
+| `confluence.md` | Confluence |
+| `contentful.md` | Contentful |
+| `databricks.md` | Databricks |
+| `dynamics_365_business_central.md` | Microsoft Dynamics 365 Business Central |
+| `dynamics_365_synapse_link.md` | Microsoft Dynamics 365 Synapse Link |
+| `entra_id.md` | Microsoft Entra ID |
+| `github.md` | GitHub |
+| `google_ads.md` | Google Ads |
+| `google_sheets.md` | Google Sheets |
+| `hubspot.md` | Hubspot |
+| `infor_datalake.md` | Infor Datalake |
+| `jira.md` | Jira |
+| `linkedin_ads.md` | LinkedIn Ads |
+| `mailgun.md` | Mailgun |
+| `marketo.md` | Marketo |
+| `meta_marketing.md` | Meta Marketing |
+| `microsoft_ads.md` | Microsoft Ads (repo `plugin-bing-ads`) |
+| `monday.md` | Monday.com |
+| `ms_excel.md` | MS Excel |
+| `mssql.md` | Microsoft SQL Server |
+| `mysql.md` | MySQL |
+| `netsuite.md` | NetSuite |
+| `notion.md` | Notion |
+| `paypal_braintree.md` | PayPal Braintree |
+| `postgresql.md` | PostgreSQL |
+| `questdb.md` | QuestDB |
+| `reddit_ads.md` | Reddit Ads |
+| `salesforce.md` | Salesforce |
+| `sfmc.md` | Salesforce Marketing Cloud |
+| `shopify.md` | Shopify |
+| `slack.md` | Slack |
+| `typeform.md` | Typeform |
+| `ukg_pro_wfm.md` | UKG Pro WFM |
+| `wise.md` | Wise |
+| `xero.md` | Xero |
+| `zendesk_support.md` | Zendesk Support |
+| `zoho_crm.md` | Zoho CRM |
 
 ## No released plugin
 
@@ -62,16 +64,3 @@ Stub pages only: `amazon-ads.md`, `azure-consumption.md`, `dynamics-365-ce.md`, 
 ## No reference page yet
 
 `approvalmax`, `attio`, `bom-weather-data`, `mrpeasy`, `payhero`, `pinterest-ads`. Copy parameters from a UI-created sync instead.
-
-## Open items before publishing
-
-- **Plugin FQNs are derived, not confirmed.** Each is computed from `developer_id` and `plugin_id`. Several plugins use non-Omnata developer IDs (`MONITORIAL__MSSQL`, `MONITORIAL__POSTGRESQL`, `DATA_ENGINEERS__MONDAY`, `DATA_ENGINEERS__ENTRA_ID`, `OMNATA_LABS__PAYPAL_BRAINTREE`). Check them against `PLUGIN_FQN` in a live `DATA_VIEWS.CONNECTION`.
-- **Multi-select and dropdown value formats are unconfirmed** for parameters such as `ad_accounts` (LinkedIn, Meta, Reddit), `workspaces` (Clockify), `companies` (Business Central), `schema` (MSSQL, Databricks), `workspace` (Typeform) and `profile_id` (Wise). The examples use the terse value form. Confirm against a UI-created sync's `SYNC_PARAMETERS`.
-- **Docs conflicts to fix in the docs repo:**
-  - Slack docs say `Create`; the plugin's strategy is `Post Message`.
-  - Airtable docs say Incremental is supported; the plugin supports Full Refresh only.
-  - SFMC and Google Sheets docs say Full Refresh only; the plugins allow Incremental in some cases.
-  - The Contentful plugin has more streams, and a Content Delivery API method, than the docs list.
-  - Xero docs list Payroll and Projects; the plugin offers only Accounting and Assets.
-  - Google Ads docs describe a "Campaign Report Grouping" parameter that the plugin doesn't have.
-  - PayPal Braintree docs use `receivedDate` as the disputes cursor; the plugin uses `received_date`.
