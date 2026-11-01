@@ -40,4 +40,5 @@ Outbound syncs are created by copying an existing sync to this plugin (Outbound 
 - Issue child streams are fetched per issue, which slows initial syncs. Narrow with `jql_issues_clause` where possible.
 - Consumer UDFs/UDTFs all take `CONNECTION_PARAMETERS` first and work with API token, OAuth and Service Account OAuth connections: `FETCH_PROJECTS`, `FETCH_USERS`, `FETCH_GROUPS`, `FETCH_GROUP_MEMBERS(GROUP_ID, INCLUDE_INACTIVE_USERS)`, `FETCH_PROJECT_VERSIONS(PROJECT_KEY)`, `FETCH_ALL_ISSUE_FIELDS`, `JQL_QUERY(QUERY, RECORD_LIMIT, FIELDS)`, `JQL_QUERY_COUNT(QUERY)`, `CREATE_ISSUE`, `CREATE_OR_UPDATE_ORGANIZATION`, `DELETE_ISSUES(ISSUE_IDS_OR_KEYS)`.
 - **Before running** `DELETE_ISSUES`: it permanently deletes issues and their subtasks, one call per issue. Show the user the issue keys and count. Confirm with the user before using it. It returns `ISSUE_ID_OR_KEY`, `STATUS` (`SUCCESS`, `NOT_FOUND` or `ERROR`) and `RESULT`.
+- Supports inbound record filtering (Sync Engine custom record filtering via a user-defined function).
 - The Upsert matching key per target type wasn't verified. Copy from a UI-created sync.
