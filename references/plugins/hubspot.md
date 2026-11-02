@@ -21,7 +21,7 @@ Follow `configure-connections.md`.
 - `include_form_submissions` (required checkbox): adds one form submissions stream per HubSpot form.
 - `associations_warning` is read-only. Don't pass it.
 
-**Streams**: static CRM objects (for example `contacts`, `companies`, `deals`), plus custom objects discovered from the account schema. Form submission streams appear only when `include_form_submissions` is true. `email_events` (primary key `id`, cursor `created`) and `marketing_emails` (primary key `id`, cursor `updatedAt`) support Full Refresh and Incremental. Archived records are handled within the main streams via `check_archive`, not separate streams.
+**Streams**: static CRM objects (for example `contacts`, `companies`, `deals`), plus custom objects discovered from the account schema. Form submission streams appear only when `include_form_submissions` is true. Archived records are handled within the main streams via `check_archive`, not separate streams.
 
 ## Outbound
 
@@ -39,5 +39,6 @@ Outbound syncs are created by copying an existing sync to this plugin (Outbound 
 
 - Outbound uses HubSpot import jobs, so the private app needs the `crm.import` scope. Dates are formatted MM/DD/YYYY.
 - HubSpot doesn't bump last-modified dates on association changes, so incremental syncs with `include_associations` can miss association-only changes.
-- Consumer UDTF `SINGLE_SEND_EMAIL(CONNECTION_PARAMETERS, EMAIL_ID, TO_ADDRESS)` sends an existing marketing email to one recipient and returns `EMAIL_ID`, `STATUS` (`SUCCESS` or `ERROR`) and `RESPONSE`. It sends a real email and creates the recipient as a contact if missing. Show the user the email ID and recipients, and confirm with the user before calling it. Needs Marketing Hub Enterprise or the transactional email add-on.
+- Consumer UDTF `SINGLE_SEND_EMAIL(CONNECTION_PARAMETERS, EMAIL_ID, TO_ADDRESS)` sends an existing marketing email to one recipient and returns `EMAIL_ID`, `STATUS` (`SUCCESS` or `ERROR`) and `RESPONSE`. Needs Marketing Hub Enterprise or the transactional email add-on.
+- **Before running** `SINGLE_SEND_EMAIL`: it sends a real email and creates the recipient as a HubSpot contact if missing. Show the user the email ID and recipients, and confirm with the user before using it.
 - Whether checkbox values are stored as booleans or strings wasn't verified. Copy from a UI-created sync if unsure.
