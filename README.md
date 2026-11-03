@@ -29,6 +29,10 @@ Besides reading data, the skill can make changes in your Snowflake account and i
 - **Runs a local Python script** (`scripts/render_storage_location.py`) that only reads a plan file CoCo writes and prints a storage location preview. It doesn't connect to Snowflake or change anything
 - **Fetches the public Snowflake and Omnata status pages** when preparing a support request
 
+### Security review
+
+v1.4.0 was scanned with [NVIDIA SkillSpector](https://github.com/NVIDIA/SkillSpector) 2.12.0 (static and LLM review) and rated SAFE. Accepted findings are listed with reasons in [`.skillspector-baseline.yaml`](.skillspector-baseline.yaml).
+
 ## Licence
 
 Copyright 2026 Omnata. Licensed under the Apache License 2.0. See [LICENSE](LICENSE).
