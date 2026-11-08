@@ -14,7 +14,7 @@ Look up directions, outbound strategies and stream strategies from the installed
 - `incremental_timestamp_offset`: seconds subtracted from the last cursor value (max useful value 600).
 - `currency_rounding`: round currency and percent fields in normalized views to their Salesforce scale.
 
-**Streams**: one per queryable sObject, named by API name (e.g. `Account`, custom objects ending in __c). Change Data Capture event objects are excluded.
+**Streams**: one per queryable sObject, named by API name (e.g. `Account`, custom objects ending in __c). Change Data Capture event objects and Data Cloud objects (ending `__dlm`, `__dll` or `__dlo`) are excluded. An object Salesforce returns no field metadata for is left out of the list rather than failing the sync.
 
 ## Outbound
 

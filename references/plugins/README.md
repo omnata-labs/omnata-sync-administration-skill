@@ -50,6 +50,7 @@ Directions and outbound strategies aren't listed here. Look them up in `DATA_VIE
 | `sfmc.md` | Salesforce Marketing Cloud |
 | `shopify.md` | Shopify |
 | `slack.md` | Slack |
+| `stripe.md` | Stripe |
 | `typeform.md` | Typeform |
 | `ukg_pro_wfm.md` | UKG Pro WFM |
 | `wise.md` | Wise |

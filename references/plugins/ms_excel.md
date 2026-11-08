@@ -39,5 +39,6 @@ Outbound syncs are created by copying an existing sync to this plugin (Outbound 
 
 ## Notes
 
+- Inbound loads blank cells as NULL, not empty strings (from V2.10). Downstream filters on `= ''` need to test `IS NULL` instead.
 - Excel has no change events. Rows deleted from a file only disappear after a Full Refresh.
 - `selected_file` is a file identifier from a dynamic dropdown. Copy it from a sync created in the UI.
