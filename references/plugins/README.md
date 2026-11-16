@@ -43,8 +43,10 @@ Directions and outbound strategies aren't listed here. Look them up in `DATA_VIE
 | `netsuite.md` | NetSuite |
 | `notion.md` | Notion |
 | `paypal_braintree.md` | PayPal Braintree |
+| `pipedrive.md` | Pipedrive |
 | `postgresql.md` | PostgreSQL |
 | `questdb.md` | QuestDB |
+| `quickbooks.md` | QuickBooks Online (repo `plugin-quickbooks-online`) |
 | `reddit_ads.md` | Reddit Ads |
 | `salesforce.md` | Salesforce |
 | `sfmc.md` | Salesforce Marketing Cloud |

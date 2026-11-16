@@ -34,3 +34,4 @@ Outbound syncs are created by copying an existing sync to this plugin (Outbound 
 
 - SOAP-style REQUEST_LIMIT_EXCEEDED responses (HTTP 403) are retried as rate limits. Treat them as throttling, not a permissions error.
 - Tag objects (ending in __Tag) use `SystemModstamp` as the cursor.
+- Ad hoc bulk export runs in two stages. `UDFS.CREATE_BULK_EXPORT_JOB(CONNECTION_SLUG, QUERY, USE_PK_CHUNKING, CHUNK_SIZE)` (defaults `TRUE`, `100000`) runs a SOQL query as a bulk job, waits for it and returns the job ID. Then `UDFS.FETCH_BULK_EXPORT_RESULTS(CONNECTION_PARAMETERS, JOB_ID, PARALLELISM)` (default `5`) returns `IDENTIFIER`, `RECORD`, `IS_DELETED` and `LAST_MODIFIED_DATE`. The fetch errors if the job isn't finished. Results stay available for 7 days. The job includes deleted records, flagged by `IS_DELETED`. `PREVIEW_SOQL_QUERY_CHUNKED` was removed.
