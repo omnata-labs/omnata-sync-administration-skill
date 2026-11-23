@@ -23,3 +23,5 @@ Look up directions, outbound strategies and stream strategies from the installed
 
 - Minute granularity with many grouping dimensions can produce millions of rows per day.
 - Different granularities need separate syncs.
+- From V2.5 the plugin is named Anthropic in the Omnata UI and `DATA_VIEWS.PLUGIN`. The FQN stays `OMNATA__CLAUDE`.
+- **Before running** `CLAUDE_ADMIN_API_REQUEST(connection_parameters, method, path, query_params, request_body)`: it calls the Admin API with the connection's Admin API key, only for paths under `/v1/organizations/`, and accepts GET, POST and DELETE. POST and DELETE change the Anthropic organization (for example workspaces or users). Show the user the method, path and body. Confirm with the user before using it. Use it rather than `CLAUDE_API_REQUEST` for Admin API paths when the connection has both keys, because `CLAUDE_API_REQUEST` uses the Compliance Access Key first. The schema the UDTF is installed in wasn't verified.
